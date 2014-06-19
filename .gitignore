@@ -1,8 +1,2 @@
-# History files
-.Rhistory
-
-# Example code in package build process
-*-Ex.R
-
-# R data files from past sessions
-.Rdata
+*.pdf	# figures can be easily generated on the client side and are not tracked
+*.jags	# jags model files are generated on-the-fly by R scripts
