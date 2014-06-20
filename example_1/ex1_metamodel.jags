@@ -1,0 +1,18 @@
+
+data {
+    N <- length(presence)
+}
+model {
+
+for (i in 1:N) {
+    presence[i] ~ dbin(pr[i], 1)
+    logit(pr[i]) <- b0 + b1 * temp[i] + b2 * temp[i]^2 + b3 * precip[i] + b4 * precip[i]^2
+}
+
+# priors
+b0 ~ dnorm(bPrior[1,1], bPrior[1,2])
+b1 ~ dnorm(bPrior[2,1], bPrior[2,2])
+b2 ~ dnorm(bPrior[3,1], bPrior[3,2])
+b3 ~ dnorm(bPrior[4,1], bPrior[4,2])
+b4 ~ dnorm(bPrior[5,1], bPrior[5,2])
+}
