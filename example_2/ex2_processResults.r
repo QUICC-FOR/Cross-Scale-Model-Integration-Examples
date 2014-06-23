@@ -25,7 +25,7 @@
 load("dat/maple.rdata")
 load("dat/maplePA.rdata")
 load("results/naiveModelResults.rdata")
-load("results/integratedModelPresentResults.rdata")
+load("results/integratedModelResults.rdata")
 source("ex2_Functions.r")
 
 
@@ -39,8 +39,8 @@ naivePresPred <- process_output(naiveModel$posteriorSamples[[1]], transformation
 naiveFutPred <- process_output(naiveModel$posteriorSamples[[1]], transformations, newData=futClimate)
 
 # integrated predictions
-intPresPred <- process_output(integratedModelPres$posteriorSamples[[1]], transformations, newData=presClimate)
-intFutPred <- process_output(integratedModelPres$posteriorSamples[[1]], transformations, newData=futClimate)
+intPresPred <- process_output(integratedModel$posteriorSamples[[1]], transformations, newData=presClimate)
+intFutPred <- process_output(integratedModel$posteriorSamples[[1]], transformations, newData=futClimate)
 
 predictions <- cbind(maple[,1:2], naivePresPred, naiveFutPred, intPresPred, intFutPred)
 
