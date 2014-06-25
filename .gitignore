@@ -1,2 +1,7 @@
-*.pdf	# figures can be easily generated on the client side and are not tracked
-*.jags	# jags model files are generated on-the-fly by R scripts
+# figures can be easily generated on the client side and are not tracked
+*.pdf
+
+# jags model files are generated on-the-fly by R scripts
+*.jags
+
+*.history
