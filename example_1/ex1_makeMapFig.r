@@ -59,13 +59,13 @@ main <- function() {
 	zlUn <- range(c(m1Uncertainty, mmUncertainty))
 	
 	with(m1Predictions$mapDomain, 
-		sdm_plot(m1Matrix, unique(precip), unique(temp), zlim=zlSDM, title="(a) Naive probability of presence"))
+		sdm_plot(m1Matrix, unique(precip), unique(temp), zlim=zlSDM, title="(a) Naive model, probability of presence"))
 	with(m1Predictions$mapDomain, 
-		sdm_plot(m1Uncertainty, unique(precip), unique(temp), zlim=zlUn, col.palette=uncertainty.palette, title="(b) Naive model standard deviation"))
+		sdm_plot(m1Uncertainty, unique(precip), unique(temp), zlim=zlUn, col.palette=uncertainty.palette, title="(b) Naive model, standard deviation"))
 	with(mmPredictions$mapDomain, 
-		sdm_plot(mmMatrix, unique(precip), unique(temp), zlim=zlSDM, title="(c) Integrated  model probability of presence"))
+		sdm_plot(mmMatrix, unique(precip), unique(temp), zlim=zlSDM, title="(c) Integrated model, probability of presence"))
 	with(mmPredictions$mapDomain, 
-		sdm_plot(mmUncertainty, unique(precip), unique(temp), zlim=zlUn, col.palette=uncertainty.palette, title="(d) Integrated model standard deviation"))
+		sdm_plot(mmUncertainty, unique(precip), unique(temp), zlim=zlUn, col.palette=uncertainty.palette, title="(d) Integrated model, standard deviation"))
 
 	dev.off()
 }
@@ -89,11 +89,11 @@ posterior_map <- function(predictions, domain) {
 }
 
 sdm_xaxis <- function(precip.range) {
-	hist.yloc <- -1.3
-	hist.line.yloc <- -1.17
+	hist.yloc <- -1.21
+	hist.line.yloc <- -1.14
 	hist.xloc <- precip.range$current[2] + (precip.range$current[2] - precip.range$current[1])/11 #11 is the number of cells in the raster
-	fut.yloc <- -1.2
-	fut.line.yloc <- -1.3
+	fut.yloc <- -1.25
+	fut.line.yloc <- -1.18
 	fut.xloc <- precip.range$future[1] - (precip.range$current[2] - precip.range$current[1])/11 #11 is the number of cells in the raster
 	hist.pos <- 2
 	fut.pos <- 4

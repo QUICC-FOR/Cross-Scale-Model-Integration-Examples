@@ -53,15 +53,16 @@ load("dat/ex1_m2.rdata")
 load("dat/ex1_mm.rdata")
 
 yl <- c(
-	min(c(m1Predictions$precipPredict$lower, m2Predictions$lower, mmPredictions$precipPredict$lower)), 
+	min(c(m1Predictions$precipPredict$lower, m2Predictions$lower, mmPredictions$precipPredict$lower)) - 0.02, 
 	max(c(m1Predictions$precipPredict$upper, m2Predictions$upper, mmPredictions$precipPredict$upper)))
 yl <- round(yl,2)
-with(m1Predictions, precip_plot(precipDomain$precip, precipPredict, ylim=yl, main='(a) Naive model'))
-lines(c(0,1), c(0.99,0.99), col='blue')
-lines(c(0,0), c(0.98, 1), col='blue')
-lines(c(1,1), c(0.98, 1), col='blue')
+par(xpd=TRUE)
+with(m1Predictions, precip_plot(precipDomain$precip, precipPredict, ylim=yl, main='(a) Naive meta-model'))
+lines(c(0,1), rep(-0.01,2), col='blue', lwd=1.5)
+# lines(c(0,0), c(0.98, 1), col='blue')
+# lines(c(1,1), c(0.98, 1), col='blue')
 
-precip_plot(m2Predictions$precip, m2Predictions, ylim=yl, main='(b) Mechanistic model')
-with(mmPredictions, precip_plot(precipDomain$precip, precipPredict, ylim=yl, main='(c) Integrated Model'))
+precip_plot(m2Predictions$precip, m2Predictions, ylim=yl, main='(b) Mechanistic sub-model')
+with(mmPredictions, precip_plot(precipDomain$precip, precipPredict, ylim=yl, main='(c) Integrated meta-model'))
 
 dev.off()
