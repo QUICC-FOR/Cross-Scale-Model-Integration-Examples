@@ -63,7 +63,7 @@ meanZlims <- c(0,1)
 meanColors <- bpy.colors()
 meanTitles <- c("A. Phenofit: Present", "B. Phenofit: HadA2", "C. Naive SDM: Present",  "D. Naive SDM: HadA2", "G. Integrated: Present", "H. Integrated: HadA2")
 errorTitles <- c("E. SDM: Present",  "F. SDM: HadA2", "I. Integrated: Present", "J. Integrated: HadA2")
-meanScaleTitle <- "Probability of Presence"
+meanScaleTitle <- "Suitability"
 
 if(useSE) {
 	errorZlims <- range(errorPredictions)
