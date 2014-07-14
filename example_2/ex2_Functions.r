@@ -34,7 +34,7 @@ set_mcmc_settings <- function() {
 }
 
 
-process_output <- function(posteriorSample, transformations, newData, SE = TRUE, credInterval = TRUE, allreps = FALSE) {
+process_output <- function(posteriorSample, transformations, newData, SE = TRUE, credInterval = TRUE, allreps = FALSE, do.transform=TRUE) {
 	# posterior sample: a sample from a posterior distribution, e.g., from coda.samples, class is mcmc
 	# transformations: a named list of lists; names correspond to variables, each list is a list of 2 functions, $forward and $backward that will apply data transformations
 	# newData: a new dataset with names matching those in transformations
@@ -47,8 +47,9 @@ process_output <- function(posteriorSample, transformations, newData, SE = TRUE,
 
 
 	# transform predictors
-	newData <- sapply(names(newData), function(varName) transformations[[varName]]$forward(newData[,varName]))
-	
+	if(do.transform)
+		newData <- sapply(names(newData), function(varName) transformations[[varName]]$forward(newData[,varName]))
+
 
 	# predict the prob of presence for each point in newData
 	# assumes the FIRST parameter in posteriorSample is the intercept
