@@ -209,7 +209,7 @@ variable_names <- function(model) {
 		stringsAsFactors = FALSE
 	)
 	
-	variables$parameter <- paste("b_", variables$varNames, variables$power, sep="")
+	variables$parameter <- paste("b_", variables$varNames, variables$powers, sep="")
 
 	## fix a bug where the intercept isn't sorted first on some OSs
 	interceptRow <- variables[1,]
@@ -217,7 +217,7 @@ variable_names <- function(model) {
 	variables <- variables[-1,]
 	
 	# sort the variables without the intercept
-	variables <- variables[order(variables$varNames, variables$power),]
+	variables <- variables[order(variables$varNames, variables$powers),]
 	
 	# return the intercept
 	variables <- rbind(interceptRow, variables)
