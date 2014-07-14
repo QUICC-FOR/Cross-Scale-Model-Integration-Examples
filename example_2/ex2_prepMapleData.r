@@ -26,6 +26,13 @@ library(sp)
 maple <- read.csv("dat/ex2_AceSac.csv")
 load("dat/ex2_currentClim.rdata")
 load("dat/ex2_futureClim.rdata")
+source("ex2_Transformations.r")
+
+# set the seed for the random number generator, for reproducibility
+# comment this line out for random pseudo absence draws
+# this seed was chosen by a single call to:
+# runif(1,0,.Machine$integer.max)
+set.seed(626786234)
 
 
 # make them spatial objects
@@ -40,4 +47,32 @@ maple <- cbind(maple, over(maple, current_clim), over(maple, future_clim))
 dropRows <- which( (apply(maple, 1, function(x) sum(is.na(x)))) > 0)	# find rows with at least 1 NA
 maple <- maple[-dropRows, c(1:5, 10:15, 18:23)]
 
-save(maple, file="dat/maple.rdata")
+
+## code below will be useful for splitting off a validation dataset
+## dat.presence <- maple[maple[,presence.column]==1,]
+## dat.absence <- maple[maple[,presence.column]==0,]
+
+
+## transform data
+## all climate data gets zero-centered (based on the PRESENT climatic conditions, including for future climate)
+## phenofit predictions get "squeezed" to fit on the (0,1) interval instead of [0,1]
+transformations <- lapply(maple[,6:11], rescale, return.functions=TRUE)
+for(nm in names(transformations)) {
+	nmfut <- paste("fut_", nm, sep="")
+	maple[,nm] <- transformations[[nm]]$forward(maple[,nm])
+	maple[,nmfut] <- transformations[[nm]]$forward(maple[,nmfut])
+}
+
+maple$Phenofit_CRU <- smithson_transform(maple$Phenofit_CRU)
+maple$Phenofit_HadA2 <- smithson_transform(maple$Phenofit_HadA2)
+
+
+# weight data so that the total weight of presences and absences is the same
+numAbs = sum(maple$PresObs == 0)
+numPres = sum(maple$PresObs == 1)
+wght = as.integer(numAbs / numPres)
+maple$weightedPresence = wght*maple$PresObs
+maple$weightedN = rep(1, nrow(maple))
+maple$weightedN[maple$PresObs == 1] = wght
+
+save(maple, transformations, file="dat/maple.rdata")

@@ -161,7 +161,13 @@ generate_formula <- function(data, response.column=1, predictor.columns=NULL, de
 		expandedFormula <- c(expandedFormula, currentFormula)
 	}
 	
-	collapsedFormula <- paste(names(data)[response.column], " ~ ", paste(expandedFormula, collapse = " + "))
+	if(length(response.column) == 1) {
+		response = names(data)[response.column]
+	} else {
+		response = paste("cbind(", names(data)[response.column[1]], ",", names(data)[response.column[2]], ")", sep="")
+	}
+	
+	collapsedFormula <- paste(response, " ~ ", paste(expandedFormula, collapse = " + "))
 	
 	# turn the text string of the formula into an actual formula object
 	collapsedFormula <- eval(parse(text=collapsedFormula))
