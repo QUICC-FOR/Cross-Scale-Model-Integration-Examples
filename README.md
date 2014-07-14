@@ -15,6 +15,7 @@ Dependencies:
 -------------
 * R version 3.x
 * JAGS
+* Rscript (optional, but recommended. Included with most R installations)
 
 R packages:
 -----------
@@ -22,3 +23,36 @@ R packages:
 * glm2
 * fields
 * rjags
+
+Running the models:
+-------------------
+Both examples are provided as a collection of scripts. Order matters (more so for example 
+2, but to some extent for example 1 as well). A list of all scripts and the proper order
+follows. Note that when two scripts have the same number, the order does not matter. 
+The examples are easiest to run by invoking them with `Rscript` at the command line, as follows:
+
+	cd path/to/desired/example
+    Rscript file.r
+
+Alternatively, you can run the scripts from the console by using `source()`, or by pasting
+one line at a time. Just make sure you set your working directory to the appropriate
+place, either `example_1` or `example_2`.
+
+Example 1:
+----------
+1. `Rscript ex1_m1.r` -- Run the naive model
+1. `Rscript ex1_m2.r` -- Run the mechanistic submodel
+3. `Rscript ex1_mm.r` -- Run the metamodel
+4. `Rscript ex1_makeSamplingFig.r ex1_Sampling.pdf` -- Make figure 2 from the manuscript
+4. `Rscript ex1_makePrecipFig.r ex1_precip.pdf` -- Make figure 3 from the manuscript
+4. `Rscript ex1_makeMapFig.r ex1_map.pdf` -- Make figure 4 from the manuscript
+
+Example 2:
+----------
+1. `Rscript ex2_prepMapleData.r` -- Loads data from original sources and formats it for the analysis
+2. `Rscript ex2_drawPseudoAbsences.r` -- Select a random subset of absences
+3. `Rscript ex2_setUpSDM.r` -- Use conventional methods to select the form for the metamodel
+4. `Rscript ex2_mcmcSDM.r` -- Run the mcmc on the naive model
+4. `Rscript ex2_mcmcIntegrated.r` -- Run the mcmc for the integrated model
+6. `Rscript ex2_processResults.r` -- Produce predictions from the posterior parameter distributions
+7. `Rscript ex2_makeFigures.r` -- Produce figure 5 from the manuscript
