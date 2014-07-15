@@ -27,8 +27,8 @@ load("dat/maple.rdata")
 source("ex2_Functions.r")
 
 responseColumns = 18:19
-predictorColumns <- 6:9 #### NOTE: Dropping min_temp and pet because they are highly correlated to ddeg, which was causing problems with fitting
-futureColumns <- 12:15 #### NOTE: Dropping min_temp and pet because they are highly correlated to ddeg, which was causing problems with fitting
+predictorColumns <- 6:10 #### NOTE: Dropping pet because it is highly correlated with ddeg and min_temp
+futureColumns <- predictorColumns+6 
 stepScope <- list( lower = cbind(weightedPresence, weightedN) ~ 1, upper = generate_formula(maple, responseColumns, predictorColumns))
 
 # run a stepwise regression, using BIC because it is a bit more parsimonious than AIC
@@ -58,21 +58,22 @@ starting_values <- setup_starting_values(variables, stepModel)
 ## view the predictions of the best model
 ## produce a plot of the results of the stepwise regression; uncomment to examine the intermediate results
 # old code, will help when I split data into calibration/validation sets
-maple_fut = as.data.frame(sapply(colnames(mapleAll)[predictorColumns], function(nm) transformations[[nm]]$forward(mapleAll[,paste("fut_",nm,sep="")])))
-maple_pres = as.data.frame(sapply(colnames(mapleAll)[predictorColumns], function(nm) transformations[[nm]]$forward(mapleAll[,nm])))
-
-predictions <- data.frame(
-	present=predict(stepModel, newdata=maple_pres, type="response"), 
-	future=predict(stepModel, newdata=maple_fut, type="response"))
-
-# pdf("img/SDM_stepwiseTest.pdf", width=9,height=8.5)
-layout(matrix(c(1,2,3,3), byrow=F, nrow=2), widths=c(1, 0.1))
-par(mar=c(1,1,1,1))
-titles <- c('sdm present', 'sdm HadA2 2080')
-quilt.plot(mapleAll[,1], mapleAll[,2], predictions$present, col=bpy.colors(), zlim=c(0,1), main=titles[1], add.legend=F, xaxt='n', yaxt='n')
-quilt.plot(mapleAll[,1], mapleAll[,2], predictions$future, col=bpy.colors(), zlim=c(0,1), main=titles[2], add.legend=F, xaxt='n', yaxt='n')
-plot.new()
-quilt.plot(mapleAll[,1], mapleAll[,2], predictions[,1], legend.only=T, col=bpy.colors(), zlim=c(0,1), add=F, smallplot=c(0.2,0.4, 0.05,0.95), bigplot=c(0,0,0,0))	
+# maple_fut = as.data.frame(sapply(colnames(mapleAll)[predictorColumns], function(nm) transformations[[nm]]$forward(mapleAll[,paste("fut_",nm,sep="")])))
+# maple_pres = as.data.frame(sapply(colnames(mapleAll)[predictorColumns], function(nm) transformations[[nm]]$forward(mapleAll[,nm])))
+# 
+# predictions <- data.frame(
+# 	present=predict(stepModel, newdata=maple_pres, type="response"), 
+# 	future=predict(stepModel, newdata=maple_fut, type="response"))
+# 
+# # pdf("img/SDM_stepwiseTest.pdf", width=9,height=8.5)
+# quartz(width=6,height=9)
+# layout(matrix(c(1,2,3,3), byrow=F, nrow=2), widths=c(1, 0.15))
+# par(mar=c(1,1,1,1))
+# titles <- c('sdm present', paste('sdm HadA2 2080, ', paste(colnames(mapleAll)[predictorColumns], collapse=','), sep=""))
+# quilt.plot(mapleAll[,1], mapleAll[,2], predictions$present, col=bpy.colors(), zlim=c(0,1), main=titles[1], add.legend=F, xaxt='n', yaxt='n')
+# quilt.plot(mapleAll[,1], mapleAll[,2], predictions$future, col=bpy.colors(), zlim=c(0,1), main=titles[2], add.legend=F, xaxt='n', yaxt='n')
+# plot.new()
+# quilt.plot(mapleAll[,1], mapleAll[,2], predictions[,1], legend.only=T, col=bpy.colors(), zlim=c(0,1), add=F, smallplot=c(0.2,0.4, 0.05,0.95), bigplot=c(0,0,0,0))	
 # dev.off()
 
 
