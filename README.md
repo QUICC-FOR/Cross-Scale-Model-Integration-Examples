@@ -28,8 +28,7 @@ Running the models:
 -------------------
 Both examples are provided as a collection of scripts. Order matters (more so for example 
 2, but to some extent for example 1 as well). A list of all scripts and the proper order
-follows. Note that when two scripts have the same number, the order does not matter. 
-The examples are easiest to run by invoking them with `Rscript` at the command line, as follows:
+follows. The examples are easiest to run by invoking them with `Rscript` at the command line, as follows:
 
 	cd path/to/desired/example
     Rscript file.r
@@ -50,9 +49,8 @@ Example 1:
 Example 2:
 ----------
 1. `Rscript ex2_prepMapleData.r` -- Loads data from original sources and formats it for the analysis
-2. `Rscript ex2_drawPseudoAbsences.r` -- Select a random subset of absences
-3. `Rscript ex2_setUpSDM.r` -- Use conventional methods to select the form for the metamodel
-4. `Rscript ex2_mcmcSDM.r` -- Run the mcmc on the naive model
-4. `Rscript ex2_mcmcIntegrated.r` -- Run the mcmc for the integrated model
-6. `Rscript ex2_processResults.r` -- Produce predictions from the posterior parameter distributions
-7. `Rscript ex2_makeFigures.r` -- Produce figure 5 from the manuscript
+2. `Rscript ex2_setUpSDM.r` -- Use conventional methods to select the form for the metamodel
+3. `Rscript ex2_mcmcSDM.r` -- Run the mcmc on the naive model
+3. `Rscript ex2_mcmcIntegrated.r` -- Run the mcmc for the integrated model
+5. `Rscript ex2_processResults.r` -- Produce predictions from the posterior parameter distributions
+6. `Rscript ex2_makeFigures.r` -- Produce figure 5 from the manuscript
