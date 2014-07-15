@@ -26,7 +26,7 @@ load("dat/maple.rdata")
 source("ex2_Functions.r")
 
 responseColumns = 18:19
-predictorColumns <- c(6,8,12) # need to subselect predictors due to collinearity
+predictorColumns <- 6:10 #### NOTE: Dropping pet because it is highly correlated with ddeg and min_temp
 futureColumns <- predictorColumns+6 
 stepScope <- list( lower = cbind(weightedPresence, weightedN) ~ 1, upper = generate_formula(maple, responseColumns, predictorColumns))
 
@@ -57,35 +57,25 @@ starting_values <- setup_starting_values(variables, stepModel)
 ## view the predictions of the best model
 ## produce a plot of the results of the stepwise regression; uncomment to examine the intermediate results
 # library(fields)
-# library(rgdal)
 # maple_fut = as.data.frame(sapply(colnames(mapleAll)[predictorColumns], function(nm) transformations[[nm]]$forward(mapleAll[,paste("fut_",nm,sep="")])))
 # maple_pres = as.data.frame(sapply(colnames(mapleAll)[predictorColumns], function(nm) transformations[[nm]]$forward(mapleAll[,nm])))
-# ocean = readOGR(dsn="dat/ne_110m_ocean", layer="ne_110m_ocean")
 # 
 # predictions <- data.frame(
 # 	present=predict(stepModel, newdata=maple_pres, type="response"), 
 # 	future=predict(stepModel, newdata=maple_fut, type="response"))
-# 	
 # 
 # # pdf("img/SDM_stepwiseTest.pdf", width=9,height=8.5)
-# xlim=c(-110, -50)
-# ylim=c(25,80)
-# ratio = abs(xlim[1] - xlim[2])/abs(ylim[1]-ylim[2])
-# height = 9
-# scaleFactor = 0.6
-# width = height/ratio * scaleFactor
-# scalewidth = 0.15*width
-# quartz(width=width+scalewidth,height=height)
-# layout(matrix(c(1,2,3,3), byrow=F, nrow=2), widths=c(width, scalewidth))
+# quartz(width=6,height=9)
+# layout(matrix(c(1,2,3,3), byrow=F, nrow=2), widths=c(1, 0.15))
 # par(mar=c(1,1,1,1))
-# 
 # titles <- c('sdm present', paste('sdm HadA2 2080, ', paste(colnames(mapleAll)[predictorColumns], collapse=','), sep=""))
-# quilt.plot(mapleAll[,1], mapleAll[,2], predictions$present, col=bpy.colors(), zlim=c(0,1), main=titles[1], add.legend=F, xlim=xlim, ylim=ylim, xaxt='n', yaxt='n')
-# plot(ocean, col="white", add=T)
-# quilt.plot(mapleAll[,1], mapleAll[,2], predictions$future, col=bpy.colors(), zlim=c(0,1), main=titles[2], add.legend=F, xlim=xlim, ylim=ylim, xaxt='n', yaxt='n')
-# plot(ocean, col="white", add=T)
+# quilt.plot(mapleAll[,1], mapleAll[,2], predictions$present, col=bpy.colors(), zlim=c(0,1), main=titles[1], add.legend=F, xaxt='n', yaxt='n')
+# quilt.plot(mapleAll[,1], mapleAll[,2], predictions$future, col=bpy.colors(), zlim=c(0,1), main=titles[2], add.legend=F, xaxt='n', yaxt='n')
 # plot.new()
 # quilt.plot(mapleAll[,1], mapleAll[,2], predictions[,1], legend.only=T, col=bpy.colors(), zlim=c(0,1), add=F, smallplot=c(0.2,0.4, 0.05,0.95), bigplot=c(0,0,0,0))	
 # dev.off()
+
+
+
 
 save(stepModel, variables, starting_values, file="results/stepResults.rdata")

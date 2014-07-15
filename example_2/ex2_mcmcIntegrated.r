@@ -61,7 +61,7 @@ integratedModel$burninLength <- settings$burninMin
 integratedModel$converged <- FALSE
 
 # monitor additional terms introduced by the integration
-integratedModel$paramsToMonitor <- c(integratedModel$variables$parameter, 'phi')
+integratedModel$paramsToMonitor <- c(integratedModel$variables$parameter, 'phi', 'b_Ph0')
 
 #### try to converge the model
 done <- FALSE
