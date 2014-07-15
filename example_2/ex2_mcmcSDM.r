@@ -22,7 +22,7 @@
 
 source("ex2_Functions.r")
 load("results/stepResults.rdata")
-load("dat/maplePA.rdata")
+load("dat/maple.rdata")
 library(rjags)
 settings <- set_mcmc_settings()
 
@@ -31,7 +31,7 @@ settings <- set_mcmc_settings()
 naiveModel <- list(
 	variables = variables,
 	startingValues = starting_values,
-	allData = maplePA,
+	allData = maple,
 	modelFilename="naive_model.jags"
 )
 

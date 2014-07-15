@@ -32,7 +32,6 @@ example_1/dat/ex1_m2.rdata example_1/dat/ex1_m1.rdata
 #### individual scripts for example 2:
 ## order of operations to run the full analysis:
 # 1. ex2_prepMapleData.r
-# 2. ex2_drawPseudoAbsences.r
 # 3. ex2_setUpSDM.r
 # 4. ex2_mcmcSDM.r
 # 5. ex2_mcmcIntegrated.r
@@ -41,17 +40,12 @@ example_1/dat/ex1_m2.rdata example_1/dat/ex1_m1.rdata
 
 #### step 1: prepare the data from the raw data
 example_2/dat/maple.rdata: example_2/ex2_prepMapleData.r example_2/dat/ex2_AceSac.csv \
-example_2/dat/ex2_currentClim.rdata example_2/dat/ex2_futureClim.rdata
+example_2/dat/ex2_currentClim.rdata example_2/dat/ex2_futureClim.rdata example_2/ex2_Transformations.r
 	cd example_2; Rscript ex2_prepMapleData.r
-
-#### step 2: draw pseudo-absences & transform variables for analysis
-example_2/dat/maplePA.rdata: example_2/ex2_drawPseudoAbsences.r example_2/dat/maple.rdata \
-example_2/ex2_Transformations.r
-	cd example_2; Rscript ex2_drawPseudoAbsences.r
 
 #### step 3: use a stepwise regression to choose form & starting values for the SDM
 example_2/results/stepResults.rdata: example_2/ex2_setUpSDM.r example_2/ex2_Functions.r \
-example_2/dat/maplePA.rdata
+example_2/dat/maple.rdata
 	cd example_2; Rscript ex2_setUpSDM.r
 
 ### steps 4 and 5 can be run concurrently; these will run the models then process the posterior samples

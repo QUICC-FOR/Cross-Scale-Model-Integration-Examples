@@ -34,7 +34,7 @@ set_mcmc_settings <- function() {
 }
 
 
-process_output <- function(posteriorSample, transformations, newData, SE = TRUE, credInterval = TRUE, allreps = FALSE) {
+process_output <- function(posteriorSample, transformations, newData, SE = TRUE, credInterval = TRUE, allreps = FALSE, do.transform=TRUE) {
 	# posterior sample: a sample from a posterior distribution, e.g., from coda.samples, class is mcmc
 	# transformations: a named list of lists; names correspond to variables, each list is a list of 2 functions, $forward and $backward that will apply data transformations
 	# newData: a new dataset with names matching those in transformations
@@ -47,8 +47,9 @@ process_output <- function(posteriorSample, transformations, newData, SE = TRUE,
 
 
 	# transform predictors
-	newData <- sapply(names(newData), function(varName) transformations[[varName]]$forward(newData[,varName]))
-	
+	if(do.transform)
+		newData <- sapply(names(newData), function(varName) transformations[[varName]]$forward(newData[,varName]))
+
 
 	# predict the prob of presence for each point in newData
 	# assumes the FIRST parameter in posteriorSample is the intercept
@@ -161,7 +162,13 @@ generate_formula <- function(data, response.column=1, predictor.columns=NULL, de
 		expandedFormula <- c(expandedFormula, currentFormula)
 	}
 	
-	collapsedFormula <- paste(names(data)[response.column], " ~ ", paste(expandedFormula, collapse = " + "))
+	if(length(response.column) == 1) {
+		response = names(data)[response.column]
+	} else {
+		response = paste("cbind(", names(data)[response.column[1]], ",", names(data)[response.column[2]], ")", sep="")
+	}
+	
+	collapsedFormula <- paste(response, " ~ ", paste(expandedFormula, collapse = " + "))
 	
 	# turn the text string of the formula into an actual formula object
 	collapsedFormula <- eval(parse(text=collapsedFormula))
