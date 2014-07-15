@@ -157,7 +157,7 @@ integrated_linear_predictor <- function(vars, phenofitPredictionName = "phenofit
 		phenofitPredictionName, "[i] ~ dbeta(p[i],q[i])\n",
 		"p[i] <- prPh[i] * phi\n",
 		"q[i] <- (1-prPh[i]) * phi\n",
-		"prPh[i] <- b_Ph0 + pr[i]",
+		"prPh[i] <- b_Ph0 + b_Ph1 * pr[i]",
 		sep="")
 		return(mod)
 }
@@ -166,6 +166,7 @@ integrated_prior <- function(vars) {
 	pr <- naive_prior(vars)
 	pr <- paste(pr,
 		"\nb_Ph0 ~ dnorm(0,0.001)\n",
+		"b_Ph1 ~ dnorm(0,0.001)\n",
 		"## uninformative prior for phi from Gelman 2006\n",
 		"phi <- U^2\n",
 		"U ~ dunif(0,50)", sep="")
