@@ -89,11 +89,11 @@ process_output <- function(posteriorSample, transformations, newData, SE = TRUE,
 }
 
 
-make_model_text <- function(vars, linearPredictor = naive_linear_predictor, prior = naive_prior, responseName = "PresObs") {
+make_model_text <- function(vars, linearPredictor = naive_linear_predictor, prior = naive_prior, responseName = "weightedPresence", weightName = "weightedN") {
 	mt <- c(
 		"model {",
 		"  for(i in 1:N) {",
-		paste("    ", responseName, "[i] ~ dbern(pr[i])", sep=""),
+		paste("    ", responseName, "[i] ~ dbin(pr[i], ", weightName, "[i])", sep=""),
 		paste("    ", linearPredictor(vars), sep=""),
 		"  }",
 		prior(vars),

@@ -44,7 +44,8 @@ cat(integratedModel$modelText, file=integratedModel$modelFilename)
 # jags wants only data that are used in the analysis, so use the variables$varNames (minus the intercept) to determine which
 integratedModel$mcmcData <- lapply(as.character(unique(variables$varNames)[-1]), function(x) integratedModel$allData[[x]])
 names(integratedModel$mcmcData) <- unique(variables$varNames)[-1]
-integratedModel$mcmcData$PresObs <- integratedModel$allData$PresObs
+integratedModel$mcmcData$weightedPresence <- integratedModel$allData$weightedPresence
+integratedModel$mcmcData$weightedN <- integratedModel$allData$weightedN
 integratedModel$mcmcData$phenofit <- integratedModel$allData$Phenofit_CRU
 integratedModel$mcmcData$N <- nrow(integratedModel$allData)
 
@@ -59,13 +60,15 @@ update(integratedModel$jagsModel, settings$burninMin)
 integratedModel$burninLength <- settings$burninMin
 integratedModel$converged <- FALSE
 
+# monitor additional terms introduced by the integration
+integratedModel$paramsToMonitor <- c(integratedModel$variables$parameter, 'phi')
 
 #### try to converge the model
 done <- FALSE
 tries <- 0
 sampleSize <- settings$startingSampleSize
 while(!done) {
-	integratedModel$gdSamples <- coda.samples(integratedModel$jagsModel, integratedModel$variables$parameter, sampleSize, thin=settings$thin)
+	integratedModel$gdSamples <- coda.samples(integratedModel$jagsModel, integratedModel$paramsToMonitor, sampleSize, thin=settings$thin)
 	tries <- tries + 1
 	integratedModel$burninLength <- integratedModel$burninLength + sampleSize
 	integratedModel$gd <- gelman.diag(integratedModel$gdSamples)
@@ -97,6 +100,6 @@ integratedModel$jagsModel <- jags.model(integratedModel$modelFilename, data = in
 # burnin is whatever we got for burnin last time, times 1.5, rounded to the nearest 10,000
 update(integratedModel$jagsModel, round(integratedModel$burninLength * 1.5, -4))
 
-integratedModel$posteriorSamples <- coda.samples(integratedModel$jagsModel, integratedModel$variables$parameter, n.iter=settings$finalSampleSize, thin=settings$thin)
+integratedModel$posteriorSamples <- coda.samples(integratedModel$jagsModel, integratedModel$paramsToMonitor, n.iter=settings$finalSampleSize, thin=settings$thin)
 
 save(integratedModel, file="results/integratedModelResults.rdata")

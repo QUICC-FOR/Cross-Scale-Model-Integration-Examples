@@ -43,7 +43,8 @@ cat(naiveModel$modelText, file=naiveModel$modelFilename)
 # jags wants only data that are used in the analysis, so use the variables$varNames (minus the intercept) to determine which
 naiveModel$mcmcData <- lapply(as.character(unique(variables$varNames)[-1]), function(x) naiveModel$allData[[x]])
 names(naiveModel$mcmcData) <- unique(variables$varNames)[-1]
-naiveModel$mcmcData$PresObs <- naiveModel$allData$PresObs
+naiveModel$mcmcData$weightedPresence <- naiveModel$allData$weightedPresence
+naiveModel$mcmcData$weightedN <- naiveModel$allData$weightedN
 naiveModel$mcmcData$N <- nrow(naiveModel$allData)
 
 
