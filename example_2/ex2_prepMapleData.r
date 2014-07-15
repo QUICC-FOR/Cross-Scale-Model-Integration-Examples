@@ -23,10 +23,12 @@
 
 library(sp)
 
-maple <- read.csv("dat/ex2_AceSac.csv")
+mapleAll <- read.csv("dat/ex2_AceSac.csv")
 load("dat/ex2_currentClim.rdata")
 load("dat/ex2_futureClim.rdata")
 source("ex2_Transformations.r")
+
+validationSize = 1/3 ## proportion of dataset to be reserved for validation
 
 # set the seed for the random number generator, for reproducibility
 # comment this line out for random pseudo absence draws
@@ -36,22 +38,36 @@ set.seed(626786234)
 
 
 # make them spatial objects
-maple <- SpatialPointsDataFrame(maple[,1:2], maple)
+mapleAll <- SpatialPointsDataFrame(mapleAll[,1:2], mapleAll)
 current_clim <- SpatialPointsDataFrame(current_clim[,1:2],current_clim)
 future_clim <- SpatialPointsDataFrame(future_clim[,1:2],future_clim)
 
 ## perform a spatial join of the features
-maple <- cbind(maple, over(maple, current_clim), over(maple, future_clim))
+mapleAll <- cbind(mapleAll, over(mapleAll, current_clim), over(mapleAll, future_clim))
 
 ## drop NAs & extra latlong columns
-dropRows <- which( (apply(maple, 1, function(x) sum(is.na(x)))) > 0)	# find rows with at least 1 NA
-maple <- maple[-dropRows, c(1:5, 10:15, 18:23)]
+dropRows <- which( (apply(mapleAll, 1, function(x) sum(is.na(x)))) > 0)	# find rows with at least 1 NA
+mapleAll <- mapleAll[-dropRows, c(1:5, 10:15, 18:23)]
 
 
-## code below will be useful for splitting off a validation dataset
-## dat.presence <- maple[maple[,presence.column]==1,]
-## dat.absence <- maple[maple[,presence.column]==0,]
-
+## split data into calibration (maple) and validation (mapleValidation) sets
+## this is done by randomly drawing presence/absence rows, with the constraint that
+## the ratio of presences to absences in the calibration dataset must be an integer
+## and that the validation size must be close to validationSize while meeting the other
+## constraint. "Extra" absences are put into the validation dataset
+validationN = as.integer(validationSize * nrow(mapleAll))
+calibrationN = nrow(mapleAll) - validationN
+mapleAllPres = mapleAll[mapleAll$PresObs==1,]
+mapleAllAbs = mapleAll[mapleAll$PresObs==0,]
+weight = as.integer(nrow(mapleAllAbs) / nrow(mapleAllPres))
+presSizeValid = as.integer(validationSize * nrow(mapleAllPres))
+absSizeValid = as.integer(validationSize * nrow(mapleAllAbs))
+extraAbsences = nrow(mapleAllAbs) - absSizeValid - (weight * (nrow(mapleAllPres) - presSizeValid))
+absSizeValid = absSizeValid + extraAbsences
+validationIndexPres = sample(1:nrow(mapleAllPres), presSizeValid, replace=F)
+validationIndexAbs = sample(1:nrow(mapleAllAbs), absSizeValid, replace=F)
+mapleValidation = rbind(mapleAllPres[validationIndexPres,], mapleAllAbs[validationIndexAbs,])
+maple = rbind(mapleAllPres[-validationIndexPres,], mapleAllAbs[-validationIndexAbs,])
 
 ## transform data
 ## all climate data gets zero-centered (based on the PRESENT climatic conditions, including for future climate)
@@ -75,4 +91,4 @@ maple$weightedPresence = wght*maple$PresObs
 maple$weightedN = rep(1, nrow(maple))
 maple$weightedN[maple$PresObs == 1] = wght
 
-save(maple, transformations, file="dat/maple.rdata")
+save(maple, mapleAll, mapleValidation, transformations, file="dat/maple.rdata")

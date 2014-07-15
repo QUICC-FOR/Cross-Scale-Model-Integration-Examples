@@ -28,18 +28,18 @@ load("results/integratedModelResults.rdata")
 source("ex2_Functions.r")
 
 
-presClimate <- maple[,which(colnames(maple) %in% unique(naiveModel$variables$varNames))]
-futClimate <- maple[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(naiveModel$variables$varNames))]
+presClimate <- mapleAll[,which(colnames(maple) %in% unique(naiveModel$variables$varNames))]
+futClimate <- mapleAll[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(naiveModel$variables$varNames))]
 colnames(futClimate) <- colnames(presClimate)
 
 
 # naive predictions
-naivePresPred <- process_output(naiveModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=FALSE)
-naiveFutPred <- process_output(naiveModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=FALSE)
+naivePresPred <- process_output(naiveModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=TRUE)
+naiveFutPred <- process_output(naiveModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=TRUE)
 
 # integrated predictions
-intPresPred <- process_output(integratedModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=FALSE)
-intFutPred <- process_output(integratedModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=FALSE)
+intPresPred <- process_output(integratedModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=TRUE)
+intFutPred <- process_output(integratedModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=TRUE)
 
 predictions <- cbind(maple[,1:2], naivePresPred, naiveFutPred, intPresPred, intFutPred)
 
