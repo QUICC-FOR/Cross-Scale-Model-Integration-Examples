@@ -42,11 +42,11 @@ cat(integratedModel$modelText, file=integratedModel$modelFilename)
 
 # set up the data
 # jags wants only data that are used in the analysis, so use the variables$varNames (minus the intercept) to determine which
-integratedModel$mcmcData = lapply(as.character(unique(variables$varNames)[-1]), function(x) integratedModel$allData[[x]])
-names(integratedModel$mcmcData) = unique(variables$varNames)[-1]
+integratedModel$mcmcData = lapply(c(as.character(unique(variables$varNames)[-1]), paste("fut_", as.character(unique(variables$varNames)[-1]), sep='')), function(x) integratedModel$allData[[x]])
+names(integratedModel$mcmcData) = c(unique(variables$varNames)[-1], paste("fut_", unique(variables$varNames)[-1], sep=''))
 integratedModel$mcmcData$weightedPresence = integratedModel$allData$weightedPresence
 integratedModel$mcmcData$weightedN = integratedModel$allData$weightedN
-integratedModel$mcmcData$phenofit = integratedModel$allData$Phenofit_CRU
+integratedModel$mcmcData$phenofit <- integratedModel$allData$Phenofit_HadA2
 integratedModel$mcmcData$N = nrow(integratedModel$allData)
 
 
