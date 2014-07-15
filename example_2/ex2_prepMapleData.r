@@ -26,7 +26,7 @@ library(sp)
 mapleAll <- read.csv("dat/ex2_AceSac.csv")
 load("dat/ex2_currentClim.rdata")
 load("dat/ex2_futureClim.rdata")
-source("ex2_Transformations.r")
+source("ex2_Functions.r")
 
 validationSize = 1/3 ## proportion of dataset to be reserved for validation
 

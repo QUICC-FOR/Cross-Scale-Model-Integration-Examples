@@ -40,7 +40,7 @@ example_1/dat/ex1_m2.rdata example_1/dat/ex1_m1.rdata
 
 #### step 1: prepare the data from the raw data
 example_2/dat/maple.rdata: example_2/ex2_prepMapleData.r example_2/dat/ex2_AceSac.csv \
-example_2/dat/ex2_currentClim.rdata example_2/dat/ex2_futureClim.rdata example_2/ex2_Transformations.r
+example_2/dat/ex2_currentClim.rdata example_2/dat/ex2_futureClim.rdata example_2/ex2_Functions.r
 	cd example_2; Rscript ex2_prepMapleData.r
 
 #### step 3: use a stepwise regression to choose form & starting values for the SDM

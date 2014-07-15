@@ -254,3 +254,38 @@ inv_logit <- function(x) {
 	result[inf.ind] <- 1
 	return(result)
 }
+
+smithson_transform <- function(x, N = length(x), s = 0.5) {
+	# transformation from supplemental material of Smithson and Verkuilen 2006
+	# takes data on interval [0,1] and transforms to (0,1)
+	# s is the scaling factor given in the same reference
+	val <- (x * (N-1) + s)/N
+	return(val)
+}
+
+smithson_reverse <- function(val, N = length(x), s = 0.5) {
+	x <- (val * N - s)/(N-1)
+	return(x)
+}
+
+rescale <- function(x, return.functions=FALSE) {
+	# centers data on 0 with a standard deviation of 1
+	# if return.functions is TRUE, returns a list of two functions giving forward and backward transformations
+	# if not, just returns the transformed data
+	
+	xbar <- mean(x)
+	xsd <- sd(x)
+	
+	transformations <- list(
+		forward = (function(x) (x - xbar) / xsd),
+		backward = (function(x) (x * xsd) + xbar))
+	
+	if(return.functions) {
+		return(transformations)
+	} else {
+		return(transformations$forward(x))
+	}
+	
+	return(result)
+}
+
