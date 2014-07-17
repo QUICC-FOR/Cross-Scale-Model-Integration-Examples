@@ -21,7 +21,6 @@
 # to determine starting values to give to the MCMC algorithm
 
 library(glm2)
-library(fields)
 
 load("dat/maple.rdata")
 source("ex2_Functions.r")
@@ -57,7 +56,7 @@ starting_values <- setup_starting_values(variables, stepModel)
 
 ## view the predictions of the best model
 ## produce a plot of the results of the stepwise regression; uncomment to examine the intermediate results
-# old code, will help when I split data into calibration/validation sets
+# library(fields)
 # maple_fut = as.data.frame(sapply(colnames(mapleAll)[predictorColumns], function(nm) transformations[[nm]]$forward(mapleAll[,paste("fut_",nm,sep="")])))
 # maple_pres = as.data.frame(sapply(colnames(mapleAll)[predictorColumns], function(nm) transformations[[nm]]$forward(mapleAll[,nm])))
 # 

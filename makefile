@@ -52,18 +52,18 @@ example_2/dat/maple.rdata
 ### step 3a: run the naive sdm via jags 
 ### note that they are very CPU intensive; expect hours to days of runtime on a typical desktop computer
 example_2/results/naiveModelResults.rdata: example_2/ex2_mcmcSDM.r \
-example_2/ex2_Functions.r example_2/results/stepResults.rdata example_2/dat/maplePA.rdata
+example_2/ex2_Functions.r example_2/results/stepResults.rdata example_2/dat/maple.rdata
 	cd example_2; Rscript ex2_mcmcSDM.r
 
 example_2/results/integratedModelResults.rdata: example_2/ex2_mcmcIntegrated.r \
-example_2/ex2_Functions.r example_2/results/stepResults.rdata example_2/dat/maplePA.rdata
+example_2/ex2_Functions.r example_2/results/stepResults.rdata example_2/dat/maple.rdata
 	cd example_2; Rscript ex2_mcmcIntegrated.r
 
 # step 5: process results
 # note that this step is very memory intensive; expect multiple GBs of memory usage, with lots of swapping
 # runtime can be quite long, especially if there isn't enough system RAM and lots of swapping is needed
 example_2/results/predictions.rdata: example_2/ex2_processResults.r \
-example_2/dat/maple.rdata example_2/dat/maplePA.rdata example_2/results/naiveModelResults.rdata \
+example_2/dat/maple.rdata example_2/dat/maple.rdata example_2/results/naiveModelResults.rdata \
 example_2/results/integratedModelResults.rdata example_2/ex2_Functions.r
 	cd example_2; Rscript ex2_processResults.r
 
