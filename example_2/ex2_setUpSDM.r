@@ -26,7 +26,7 @@ load("dat/maple.rdata")
 source("ex2_Functions.r")
 
 responseColumns = 18:19
-predictorColumns <- 6:10 #### NOTE: Dropping pet because it is highly correlated with ddeg and min_temp
+predictorColumns <- c(6:7) #### NOTE: Dropping pet because it is highly correlated with ddeg and min_temp
 futureColumns <- predictorColumns+6 
 stepScope <- list( lower = cbind(weightedPresence, weightedN) ~ 1, upper = generate_formula(maple, responseColumns, predictorColumns))
 

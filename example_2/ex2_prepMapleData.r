@@ -30,6 +30,13 @@ source("ex2_Functions.r")
 
 validationSize = 1/3 ## proportion of dataset to be reserved for validation
 
+## for testing, you may reduce the size of your dataset to allow quicker MCMC times
+## testProportion indicates the proportion of observations that should be used
+## to preform the analysis with all of the data, set it to 1.0
+testProportion = 0.2
+
+
+
 # set the seed for the random number generator, for reproducibility
 # comment this line out for random pseudo absence draws
 # this seed was chosen by a single call to:
@@ -49,16 +56,23 @@ mapleAll <- cbind(mapleAll, over(mapleAll, current_clim), over(mapleAll, future_
 dropRows <- which( (apply(mapleAll, 1, function(x) sum(is.na(x)))) > 0)	# find rows with at least 1 NA
 mapleAll <- mapleAll[-dropRows, c(1:5, 10:15, 18:23)]
 
+# for testing, subsample rows
+if(testProportion <= 0 | testProportion > 1) stop("TestProportion must be > 0 and <= 1")
+mapleAllPres = mapleAll[mapleAll$PresObs==1,]
+mapleAllAbs = mapleAll[mapleAll$PresObs==0,]
+if(testProportion < 1) {
+	mapleAllPres = mapleAllPres[sample(1:nrow(mapleAllPres), testProportion * nrow(mapleAllPres)), ]
+	mapleAllAbs = mapleAllAbs[sample(1:nrow(mapleAllAbs), testProportion * nrow(mapleAllAbs)), ]
+}
+
 
 ## split data into calibration (maple) and validation (mapleValidation) sets
 ## this is done by randomly drawing presence/absence rows, with the constraint that
 ## the ratio of presences to absences in the calibration dataset must be an integer
 ## and that the validation size must be close to validationSize while meeting the other
 ## constraint. "Extra" absences are put into the validation dataset
-validationN = as.integer(validationSize * nrow(mapleAll))
-calibrationN = nrow(mapleAll) - validationN
-mapleAllPres = mapleAll[mapleAll$PresObs==1,]
-mapleAllAbs = mapleAll[mapleAll$PresObs==0,]
+validationN = as.integer(validationSize * (nrow(mapleAllPres)+nrow(mapleAllAbs)))
+calibrationN = row(mapleAllPres)+nrow(mapleAllAbs) - validationN
 weight = as.integer(nrow(mapleAllAbs) / nrow(mapleAllPres))
 presSizeValid = as.integer(validationSize * nrow(mapleAllPres))
 absSizeValid = as.integer(validationSize * nrow(mapleAllAbs))

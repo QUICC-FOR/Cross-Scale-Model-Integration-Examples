@@ -28,25 +28,34 @@ load("results/integratedModelResults.rdata")
 source("ex2_Functions.r")
 
 
-presClimate <- mapleAll[,which(colnames(maple) %in% unique(naiveModel$variables$varNames))]
-futClimate <- mapleAll[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(naiveModel$variables$varNames))]
-colnames(futClimate) <- colnames(presClimate)
+presClimate = mapleAll[,which(colnames(maple) %in% unique(naiveModel$variables$varNames))]
+futClimate = mapleAll[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(naiveModel$variables$varNames))]
+validationClimate = mapleValidation[,which(colnames(maple) %in% unique(naiveModel$variables$varNames))]
+colnames(futClimate) = colnames(presClimate)
+
 
 
 # naive predictions
-naivePresPred <- process_output(naiveModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=TRUE)
-naiveFutPred <- process_output(naiveModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=TRUE)
+naivePresPred = process_output(naiveModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=TRUE)
+naiveFutPred = process_output(naiveModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=TRUE)
+naiveValidPred = process_output(naiveModel$posteriorSamples[[1]], transformations, newData = validationClimate, do.transform=TRUE, SE=FALSE, credInterval=FALSE)
 
 # integrated predictions
-intPresPred <- process_output(integratedModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=TRUE)
-intFutPred <- process_output(integratedModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=TRUE)
+intPresPred = process_output(integratedModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=TRUE)
+intFutPred = process_output(integratedModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=TRUE)
+intValidPred = process_output(integratedModel$posteriorSamples[[1]], transformations, newData = validationClimate, do.transform=TRUE, SE=FALSE, credInterval=FALSE)
 
-predictions <- cbind(maple[,1:2], naivePresPred, naiveFutPred, intPresPred, intFutPred)
+predictions = cbind(maple[,1:2], naivePresPred, naiveFutPred, intPresPred, intFutPred)
 
-colnames(predictions) <- c("long", "lat", 
+colnames(predictions) = c("long", "lat", 
 	'naivePresent', 'naivePresentSE', 'naivePresentLower', 'naivePresentUpper',
 	'naiveFuture', 'naiveFutureSE', 'naiveFutureLower', 'naiveFutureUpper',
 	'intPresent', 'intPresentSE', 'intPresentLower', 'intPresentUpper',
 	'intFuture', 'intFutureSE', 'intFutureLower', 'intFutureUpper')
 
-save(predictions, file="results/predictions.rdata")
+validation = list(data = cbind(mapleValidation[,1:3], naiveValidPred, intValidPred))
+colnames(validation$data) = c('long', 'lat', 'presence', 'naive', 'integrated')
+validation$naiveROC = ROC(validation$data$presence, validation$data$naive)
+validation$integratedROC = ROC(validation$data$presence, validation$data$integrated)
+
+save(predictions, validation, file="results/predictions.rdata")

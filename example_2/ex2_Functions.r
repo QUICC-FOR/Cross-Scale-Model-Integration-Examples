@@ -289,3 +289,19 @@ rescale <- function(x, return.functions=FALSE) {
 	return(result)
 }
 
+ROC <- function(evalData, predictions = NULL, model = NULL, response.column = 1, predictor.columns = NULL) {
+	# calculates the area under the curve for the receiver operating characteristic
+	# accepts either a model (i.e., something with a predict() method) or accepts the actual predictions for the model
+	
+	if(is.null(predictions)) {
+		if(is.null(model)) stop("Failure to provide either predictions or a model for ROC calculation")
+		predictions = predict(model, newdata = evalData[,predictor.columns], type='response')
+	}
+	evalData = as.data.frame(evalData)
+
+	require(pROC, quietly=T)
+	result = roc(evalData[,response.column], predictions)
+	
+	return(result$auc)
+}
+
