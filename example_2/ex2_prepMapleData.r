@@ -27,14 +27,7 @@ mapleAll <- read.csv("dat/ex2_AceSac.csv")
 load("dat/ex2_currentClim.rdata")
 load("dat/ex2_futureClim.rdata")
 source("ex2_Functions.r")
-
-validationSize = 1/3 ## proportion of dataset to be reserved for validation
-
-## for testing, you may reduce the size of your dataset to allow quicker MCMC times
-## testProportion indicates the proportion of observations that should be used
-## to preform the analysis with all of the data, set it to 1.0
-testProportion = 0.2
-
+settings = set_mcmc_settings()
 
 
 # set the seed for the random number generator, for reproducibility
@@ -56,13 +49,17 @@ mapleAll <- cbind(mapleAll, over(mapleAll, current_clim), over(mapleAll, future_
 dropRows <- which( (apply(mapleAll, 1, function(x) sum(is.na(x)))) > 0)	# find rows with at least 1 NA
 mapleAll <- mapleAll[-dropRows, c(1:5, 10:15, 18:23)]
 
+# add the ratio of annual precip to pet
+mapleAll = as.data.frame(append(mapleAll, list(pToPET = with(mapleAll, an_prcp/pet)), after=11))
+mapleAll$fut_pToPET = with(mapleAll, fut_an_prcp/fut_pet)
+
+
 # for testing, subsample rows
-if(testProportion <= 0 | testProportion > 1) stop("TestProportion must be > 0 and <= 1")
 mapleAllPres = mapleAll[mapleAll$PresObs==1,]
 mapleAllAbs = mapleAll[mapleAll$PresObs==0,]
-if(testProportion < 1) {
-	mapleAllPres = mapleAllPres[sample(1:nrow(mapleAllPres), testProportion * nrow(mapleAllPres)), ]
-	mapleAllAbs = mapleAllAbs[sample(1:nrow(mapleAllAbs), testProportion * nrow(mapleAllAbs)), ]
+if(settings$dataProportion < 1) {
+	mapleAllPres = mapleAllPres[sample(1:nrow(mapleAllPres), settings$dataProportion * nrow(mapleAllPres)), ]
+	mapleAllAbs = mapleAllAbs[sample(1:nrow(mapleAllAbs), settings$dataProportion * nrow(mapleAllAbs)), ]
 }
 
 
@@ -71,11 +68,11 @@ if(testProportion < 1) {
 ## the ratio of presences to absences in the calibration dataset must be an integer
 ## and that the validation size must be close to validationSize while meeting the other
 ## constraint. "Extra" absences are put into the validation dataset
-validationN = as.integer(validationSize * (nrow(mapleAllPres)+nrow(mapleAllAbs)))
+validationN = as.integer(settings$validationSize * (nrow(mapleAllPres)+nrow(mapleAllAbs)))
 calibrationN = row(mapleAllPres)+nrow(mapleAllAbs) - validationN
 weight = as.integer(nrow(mapleAllAbs) / nrow(mapleAllPres))
-presSizeValid = as.integer(validationSize * nrow(mapleAllPres))
-absSizeValid = as.integer(validationSize * nrow(mapleAllAbs))
+presSizeValid = as.integer(settings$validationSize * nrow(mapleAllPres))
+absSizeValid = as.integer(settings$validationSize * nrow(mapleAllAbs))
 extraAbsences = nrow(mapleAllAbs) - absSizeValid - (weight * (nrow(mapleAllPres) - presSizeValid))
 absSizeValid = absSizeValid + extraAbsences
 validationIndexPres = sample(1:nrow(mapleAllPres), presSizeValid, replace=F)
@@ -86,7 +83,7 @@ maple = rbind(mapleAllPres[-validationIndexPres,], mapleAllAbs[-validationIndexA
 ## transform data
 ## all climate data gets zero-centered (based on the PRESENT climatic conditions, including for future climate)
 ## phenofit predictions get "squeezed" to fit on the (0,1) interval instead of [0,1]
-transformations <- lapply(maple[,6:11], rescale, return.functions=TRUE)
+transformations <- lapply(maple[,6:12], rescale, return.functions=TRUE)
 for(nm in names(transformations)) {
 	nmfut <- paste("fut_", nm, sep="")
 	maple[,nm] <- transformations[[nm]]$forward(maple[,nm])

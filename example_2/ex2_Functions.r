@@ -19,19 +19,47 @@
 # Supporting functions for the second example
 
 
+# this variable controls whether test mode is enabled; if true, it will output a warning
+# for the user with instructions about how to enable the full analysis
+# for the full analysis, set MCMC_TEST_MODE to FALSE
+MCMC_TEST_MODE = TRUE
+
+# this first version of this function is useful for testing; it will output a warning
+# that testing settings are enabled. Use the second version to run the full analysis
 set_mcmc_settings <- function() {
 	# returns a list containing constants for the mcmc analysis
-	list(
-		n.chains = 4,
-		n.adapt = 1000,
-		burninMin = 50000,
-		startingSampleSize = 10000,
-		thin = 5,
-		burninMax = 300000,
-		finalSampleSize = 100000,
-		mpsrfThreshold = 1.1
-		)
+	if(MCMC_TEST_MODE) {
+		warning("MCMC testing mode is enabled. MCMC chains will be shortened and will not reflect true posterior distributions. To run the full analysis, set the variable MCMC_TEST_MODE to FALSE in the file ex2_Functions.r")
+		result = list(
+			n.chains = 4,
+			n.adapt = 500,
+			burninMin = 1000,
+			startingSampleSize = 1000,
+			thin = 1,
+			burninMax = 30000,
+			finalSampleSize = 2000,
+			mpsrfThreshold = 1.1,
+			dataProportion = 0.2,
+			validationSize = 1/3 # proportion of dataset to be reserved for validation
+			)	
+	} else {
+		result = list(
+			n.chains = 4,
+			n.adapt = 1000,
+			burninMin = 50000,
+			startingSampleSize = 10000,
+			thin = 5,
+			burninMax = 300000,
+			finalSampleSize = 100000,
+			mpsrfThreshold = 1.1,
+			dataProportion = 1,
+			validationSize = 1/3 # proportion of dataset to be reserved for validation
+			)
+	}
+	
+	return(result)
 }
+
 
 
 process_output <- function(posteriorSample, transformations, newData, SE = TRUE, credInterval = TRUE, allreps = FALSE, do.transform=TRUE) {
