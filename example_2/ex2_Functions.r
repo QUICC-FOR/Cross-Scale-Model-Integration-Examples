@@ -22,7 +22,7 @@
 # this variable controls whether test mode is enabled; if true, it will output a warning
 # for the user with instructions about how to enable the full analysis
 # for the full analysis, set MCMC_TEST_MODE to FALSE
-MCMC_TEST_MODE = TRUE
+MCMC_TEST_MODE = FALSE
 
 # this first version of this function is useful for testing; it will output a warning
 # that testing settings are enabled. Use the second version to run the full analysis

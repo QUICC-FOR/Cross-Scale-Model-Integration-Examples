@@ -35,6 +35,10 @@ naiveModel <- list(
 	modelFilename="naive_model.jags"
 )
 
+## the previous version failed to converge, so removing the parameter that had the highest variance
+## naiveModel$variables = naiveModel$variables[-c(3,5),]
+
+
 # set up the model file
 naiveModel$modelText = make_model_text(naiveModel$variables)
 cat(naiveModel$modelText, file=naiveModel$modelFilename)
