@@ -157,7 +157,7 @@ integrated_linear_predictor <- function(vars, phenofitPredictionName = "phenofit
 		phenofitPredictionName, "[i] ~ dbeta(p[i],q[i])\n",
 		"p[i] <- prPh[i] * phi\n",
 		"q[i] <- (1-prPh[i]) * phi\n",
-		"prPh[i] <- b_Ph0 + b_Ph1 * pr[i] + b_Ph2 * pr[i]^2",
+		"logit(prPh[i]) <- b_Ph0 + b_Ph1 * pr[i] + b_Ph2 * pr[i]^2",
 		sep="")
 		return(mod)
 }
