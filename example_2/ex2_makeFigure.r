@@ -18,18 +18,52 @@
 #
 # produce the figure for the second example
 
+
+
 load("results/predictions.rdata")
 load("dat/maple.rdata")
 source("ex2_Functions.r")
+library(fields)
+library(rgdal)
+
+in.range = function(x, lims) x >= lims[1] & x <= lims[2]
+
+if(!exists('ocean')) ocean = readOGR(dsn="dat/ne_110m_ocean", layer="ne_110m_ocean")
 
 pdfFileName = "ex2.pdf"
-pdfWidth = 9
-pdfHeight = 5.5
+pdfWidth = 7.5
+pdfHeight = 6
 titleCEX = 0.7
 
-library(fields)
+meanCols = c(3,5,7,11)
+SECols = meanCols + 1
 
-# plot the predictions
+## pick the data to display
+latLimits = c(27,65)
+longLimits = c(-105, -55)
+predictionsSub = subset(predictions, in.range(lat, latLimits) & in.range(long, longLimits))
+mapleAllSub = subset(mapleAll, in.range(lat, latLimits) & in.range(long, longLimits))
+
+latitude = predictionsSub[,2]
+longitude = predictionsSub[,1]
+meanPredictions = cbind(mapleAllSub$Phenofit_CRU, mapleAllSub$Phenofit_HadA2, predictionsSub[,meanCols])
+errorPredictions = predictionsSub[,SECols]
+
+## plotting settings
+meanZlims = c(0,1)
+# meanColors = colorRampPalette(c("#ffffff", "#bdc9e1", "#74a9cf", "#2b8cbe", "#045a8d"), interpolate='spline', bias=1, space="rgb")(200)
+meanColors = colorRampPalette(c("#ffffff", "#bdc9e1", "#045a8d", "#33338d", "#cc99ff"), interpolate='spline', bias=1, space="rgb")(200)
+meanTitles = c("A. Phenofit: Present", "B. Phenofit: HadA2", "C. Naive SDM: Present",  "D. Naive SDM: HadA2", "G. Integrated: Present", "H. Integrated: HadA2")
+errorTitles = c("E. SDM: Present SE",  "F. SDM: HadA2 SE", "I. Integrated: Present SE", "J. Integrated: HadA2 SE")
+meanScaleTitle = "Suitability"
+
+errorZlims = range(errorPredictions)
+errorColors = colorRampPalette(c("#ffffff", "#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"), interpolate='spline', space="rgb", bias=1.3)(200)
+errorTitles = paste(errorTitles, "SE", sep=" ")
+errorScaleTitle = "Posterior Standard Error"
+
+
+# produce the plot
 pdf(file=pdfFileName, width=pdfWidth,height=pdfHeight)
 plotLayout = matrix(c(
 	1,2,11,11,
@@ -41,59 +75,23 @@ plotLayout = matrix(c(
 layout(plotLayout, heights=c(0.5, 0.5, 1, 1))
 par(mar=c(1,1,1,1))
 
-
-meanCols = c(3,5,7,11)
-SECols = meanCols + 1
-ciCols = SECols + 1
-useSE = TRUE	# should we plot the SE or the credible interval
-
-
-## pick the data to display
-latitude = predictions[,2]
-longitude = predictions[,1]
-meanPredictions = cbind(mapleAll$Phenofit_CRU, mapleAll$Phenofit_HadA2, predictions[,meanCols])
-if(useSE) {
-	errorPredictions = predictions[,SECols]
-} else {
-	errorPredictions = predictions[,ciCols + 1] - predictions[,ciCols]
-}
-
-## plotting settings
-meanZlims = c(0,1)
-meanColors = bpy.colors()
-meanTitles = c("A. Phenofit: Present", "B. Phenofit: HadA2", "C. Naive SDM: Present",  "D. Naive SDM: HadA2", "G. Integrated: Present", "H. Integrated: HadA2")
-errorTitles = c("E. SDM: Present",  "F. SDM: HadA2", "I. Integrated: Present", "J. Integrated: HadA2")
-meanScaleTitle = "Suitability"
-
-if(useSE) {
-	errorZlims = range(errorPredictions)
-	errorColors = colorRampPalette(c('#000000', '#FF0000', '#FFFF00'), interpolate='spline', bias=3)(200)
-	errorTitles = paste(errorTitles, "SE", sep=" ")
-	errorScaleTitle = "Posterior Standard Error"
-} else {
-	errorZlims = c(0,1)
-	errorColors = colorRampPalette(c('#000000', '#FF0000', '#FFFF00'), interpolate='spline', bias=2)(100)
-	errorTitles = paste(errorTitles, "CI Width", sep=" ")
-	errorScaleTitle = "Posterior Credible Interval Width"
-}
-
-
-# produce the plot
-
 for(i in 1:ncol(meanPredictions)) {
 	quilt.plot(longitude, latitude, meanPredictions[,i], col=meanColors, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+	plot(ocean, col="white", add=T)
 	mtext(meanTitles[i], adj=0, cex = titleCEX)
 }
 
 for(i in 1:ncol(errorPredictions)) {
 	quilt.plot(longitude, latitude, errorPredictions[,i], col=errorColors, zlim=errorZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+	plot(ocean, col="white", add=T)
 	mtext(errorTitles[i], adj=0, cex = titleCEX)
 }
 
+## scale bars
 par(mar=c(3,1,3,1))
-image(x=seq(meanZlims[1],meanZlims[2],length.out=101), z=matrix(seq(meanZlims[1], meanZlims[2],length.out=100), nrow=100, ncol=1), zlim=meanZlims, col=meanColors, yaxt='n', xlab='', ylab='', useRaster=T)
+image(x=seq(meanZlims[1],meanZlims[2],length.out=101), z=matrix(seq(meanZlims[1], meanZlims[2],length.out=100), 
+	nrow=100, ncol=1), zlim=meanZlims, col=meanColors, yaxt='n', xlab='', ylab='', useRaster=T)
 mtext(meanScaleTitle, line=0.5, cex = titleCEX)
-image(x=seq(errorZlims[1],errorZlims[2],length.out=101), z=matrix(seq(errorZlims[1], errorZlims[2],length.out=100), nrow=100, ncol=1), zlim=errorZlims, col=errorColors, yaxt='n', xlab='', ylab='', useRaster=T)
+image(x=seq(errorZlims[1],errorZlims[2],length.out=101), z=matrix(seq(errorZlims[1], errorZlims[2],length.out=100), 
+	nrow=100, ncol=1), zlim=errorZlims, col=errorColors, yaxt='n', xlab='', ylab='', useRaster=T)
 mtext(errorScaleTitle, line=0.5, cex = titleCEX)
-
-dev.off()
