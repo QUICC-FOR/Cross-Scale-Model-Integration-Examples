@@ -49,8 +49,7 @@ Example 1:
 Example 2:
 ----------
 1. `Rscript ex2_prepMapleData.r` -- Loads data from original sources and formats it for the analysis
-2. `Rscript ex2_setUpSDM.r` -- Use conventional methods to select the form for the metamodel
-3. `Rscript ex2_mcmcSDM.r` -- Run the mcmc on the naive model
+2. `Rscript ex2_naiveModel.r` -- Use conventional methods to select the form for the naive metamodel
 3. `Rscript ex2_mcmcIntegrated.r` -- Run the mcmc for the integrated model
-5. `Rscript ex2_processResults.r` -- Produce predictions from the posterior parameter distributions
-6. `Rscript ex2_makeFigures.r` -- Produce figure 5 from the manuscript
+4. `Rscript ex2_processResults.r` -- Produce predictions from the posterior parameter distributions
+5. `Rscript ex2_makeFigure.r` -- Produce figure 5 from the manuscript

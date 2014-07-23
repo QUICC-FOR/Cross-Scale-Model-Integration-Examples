@@ -23,7 +23,7 @@
 
 library(sp)
 
-mapleAll <- read.csv("dat/ex2_AceSac.csv")
+mapleAll = read.csv("dat/ex2_AceSac.csv")
 load("dat/ex2_currentClim.rdata")
 load("dat/ex2_futureClim.rdata")
 source("ex2_Functions.r")
@@ -38,16 +38,16 @@ set.seed(626786234)
 
 
 # make them spatial objects
-mapleAll <- SpatialPointsDataFrame(mapleAll[,1:2], mapleAll)
-current_clim <- SpatialPointsDataFrame(current_clim[,1:2],current_clim)
-future_clim <- SpatialPointsDataFrame(future_clim[,1:2],future_clim)
+mapleAll = SpatialPointsDataFrame(mapleAll[,1:2], mapleAll)
+current_clim = SpatialPointsDataFrame(current_clim[,1:2],current_clim)
+future_clim = SpatialPointsDataFrame(future_clim[,1:2],future_clim)
 
 ## perform a spatial join of the features
-mapleAll <- cbind(mapleAll, over(mapleAll, current_clim), over(mapleAll, future_clim))
+mapleAll = cbind(mapleAll, over(mapleAll, current_clim), over(mapleAll, future_clim))
 
 ## drop NAs & extra latlong columns
-dropRows <- which( (apply(mapleAll, 1, function(x) sum(is.na(x)))) > 0)	# find rows with at least 1 NA
-mapleAll <- mapleAll[-dropRows, c(1:5, 10:15, 18:23)]
+dropRows = which( (apply(mapleAll, 1, function(x) sum(is.na(x)))) > 0)	# find rows with at least 1 NA
+mapleAll = mapleAll[-dropRows, c(1:5, 10:15, 18:23)]
 
 # add the ratio of annual precip to pet
 mapleAll = as.data.frame(append(mapleAll, list(pToPET = with(mapleAll, an_prcp/pet)), after=11))
@@ -83,15 +83,15 @@ maple = rbind(mapleAllPres[-validationIndexPres,], mapleAllAbs[-validationIndexA
 ## transform data
 ## all climate data gets zero-centered (based on the PRESENT climatic conditions, including for future climate)
 ## phenofit predictions get "squeezed" to fit on the (0,1) interval instead of [0,1]
-transformations <- lapply(maple[,6:12], rescale, return.functions=TRUE)
+transformations = lapply(maple[,6:12], rescale, return.functions=TRUE)
 for(nm in names(transformations)) {
-	nmfut <- paste("fut_", nm, sep="")
-	maple[,nm] <- transformations[[nm]]$forward(maple[,nm])
-	maple[,nmfut] <- transformations[[nm]]$forward(maple[,nmfut])
+	nmfut = paste("fut_", nm, sep="")
+	maple[,nm] = transformations[[nm]]$forward(maple[,nm])
+	maple[,nmfut] = transformations[[nm]]$forward(maple[,nmfut])
 }
 
-maple$Phenofit_CRU <- smithson_transform(maple$Phenofit_CRU)
-maple$Phenofit_HadA2 <- smithson_transform(maple$Phenofit_HadA2)
+maple$Phenofit_CRU = smithson_transform(maple$Phenofit_CRU)
+maple$Phenofit_HadA2 = smithson_transform(maple$Phenofit_HadA2)
 
 
 # weight data so that the total weight of presences and absences is the same

@@ -8,7 +8,6 @@
 *.rdata
 
 # others are computationally expensive, and should be tracked
-!results/naiveModel.rdata
 !results/integratedModel.rdata
 !results/predictions.rdata
 

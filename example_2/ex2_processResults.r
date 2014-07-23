@@ -23,41 +23,47 @@
 
 
 load("dat/maple.rdata")
-load("results/naiveModelResults.rdata")
-load("results/integratedModelResults.rdata")
+load("results/naiveModel.rdata")
+load("results/integratedModel.rdata")
 source("ex2_Functions.r")
 
 
-presClimate = mapleAll[,which(colnames(maple) %in% unique(naiveModel$variables$varNames))]
-futClimate = mapleAll[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(naiveModel$variables$varNames))]
-validationClimate = mapleValidation[,which(colnames(maple) %in% unique(naiveModel$variables$varNames))]
+# extract only the relevant climate variables
+presClimate = mapleAll[,which(colnames(maple) %in% unique(variables$varNames))]
+futClimate = mapleAll[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(variables$varNames))]
+validationClimate = mapleValidation[,which(colnames(maple) %in% unique(variables$varNames))]
 colnames(futClimate) = colnames(presClimate)
 
+# apply the transformations used in the calibration data to the projection datasets
+presClimate = as.data.frame(sapply(names(presClimate), function(name) transformations[[name]]$forward(presClimate[,name])))
+futClimate = as.data.frame(sapply(names(futClimate), function(name) transformations[[name]]$forward(futClimate[,name])))
+validationClimate = as.data.frame(sapply(names(validationClimate), function(name) transformations[[name]]$forward(validationClimate[,name])))
 
-
-# naive predictions
-naivePresPred = process_output(naiveModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=TRUE)
-naiveFutPred = process_output(naiveModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=TRUE)
-naiveValidPred = process_output(naiveModel$posteriorSamples[[1]], transformations, newData = validationClimate, do.transform=TRUE, SE=FALSE, credInterval=FALSE)
+# produce predictions for the naive model
+naivePresPred = predict(naiveModel, newdata=presClimate, type='response', se.fit=TRUE)
+naiveFutPred = predict(naiveModel, newdata=futClimate, type='response', se.fit=TRUE)
+naiveValidPred = predict(naiveModel, newdata=validationClimate, type='response', se.fit=FALSE)
 
 # integrated predictions
-# drop integration terms from the posterior
+# first drop extra integration terms from the posterior
 intPosterior = integratedModel$posteriorSamples[[1]][,colnames(integratedModel$posteriorSamples[[1]]) %in% integratedModel$variables$parameter]
-intPresPred = process_output(intPosterior, transformations, newData=presClimate, do.transform=TRUE)
-intFutPred = process_output(intPosterior, transformations, newData=futClimate, do.transform=TRUE)
-intValidPred = process_output(intPosterior, transformations, newData = validationClimate, do.transform=TRUE, SE=FALSE, credInterval=FALSE)
+intPresPred = process_output(intPosterior, newData=presClimate)
+intFutPred = process_output(intPosterior, newData=futClimate)
+intValidPred = process_output(intPosterior, newData = validationClimate, SE=FALSE, credInterval=FALSE)
 
-predictions = cbind(maple[,1:2], naivePresPred, naiveFutPred, intPresPred, intFutPred)
+predictions = cbind(mapleAll[,1:2], naivePresPred$fit, naivePresPred$se.fit, naiveFutPred$fit, naiveFutPred$se.fit, intPresPred, intFutPred)
 
 colnames(predictions) = c("long", "lat", 
-	'naivePresent', 'naivePresentSE', 'naivePresentLower', 'naivePresentUpper',
-	'naiveFuture', 'naiveFutureSE', 'naiveFutureLower', 'naiveFutureUpper',
+	'naivePresent', 'naivePresentSE', 'naiveFuture', 'naiveFutureSE',
 	'intPresent', 'intPresentSE', 'intPresentLower', 'intPresentUpper',
 	'intFuture', 'intFutureSE', 'intFutureLower', 'intFutureUpper')
 
 validation = list(data = cbind(mapleValidation[,1:3], naiveValidPred, intValidPred))
 colnames(validation$data) = c('long', 'lat', 'presence', 'naive', 'integrated')
-validation$naiveROC = ROC(validation$data$presence, validation$data$naive)
-validation$integratedROC = ROC(validation$data$presence, validation$data$integrated)
+# this fails on older versions of R, so wrapped in try to finish the script
+try({
+	validation$naiveROC = ROC(validation$data$presence, validation$data$naive)
+	validation$integratedROC = ROC(validation$data$presence, validation$data$integrated)
+})
 
 save(predictions, validation, file="results/predictions.rdata")
