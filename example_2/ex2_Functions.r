@@ -22,7 +22,7 @@
 # this variable controls whether test mode is enabled; if true, it will output a warning
 # for the user with instructions about how to enable the full analysis
 # for the full analysis, set MCMC_TEST_MODE to FALSE
-MCMC_TEST_MODE = TRUE
+MCMC_TEST_MODE = FALSE
 
 # this first version of this function is useful for testing; it will output a warning
 # that testing settings are enabled. Use the second version to run the full analysis
@@ -155,8 +155,9 @@ integrated_linear_predictor <- function(vars, phenofitPredictionName = "phenofit
 	mod <- naive_linear_predictor(vars)
 	mod <- paste(mod, "\n", 
 		phenofitPredictionName, "[i] ~ dbeta(p[i],q[i])\n",
-		"p[i] <- pr[i] * phi\n",
-		"q[i] <- (1-pr[i]) * phi\n",
+		"p[i] <- prPh[i] * phi\n",
+		"q[i] <- (1-prPh[i]) * phi\n",
+		"logit(prPh[i]) <- b_Ph0 + b_Ph1 * pr[i] + b_Ph2 * pr[i]^2",
 		sep="")
 		return(mod)
 }
@@ -164,6 +165,9 @@ integrated_linear_predictor <- function(vars, phenofitPredictionName = "phenofit
 integrated_prior <- function(vars) {
 	pr <- naive_prior(vars)
 	pr <- paste(pr,
+		"\nb_Ph0 ~ dnorm(0,0.001)\n",
+		"b_Ph1 ~ dnorm(0,0.001)\n",
+		"b_Ph2 ~ dnorm(0,0.001)\n",
 		"## uninformative prior for phi from Gelman 2006\n",
 		"phi <- U^2\n",
 		"U ~ dunif(0,50)", sep="")

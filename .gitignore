@@ -4,4 +4,12 @@
 # jags model files are generated on-the-fly by R scripts
 *.jags
 
+# some binary files can be generated easily, so no need to track
+*.rdata
+
+# others are computationally expensive, and should be tracked
+!results/naiveModel.rdata
+!results/integratedModel.rdata
+!results/predictions.rdata
+
 *.history

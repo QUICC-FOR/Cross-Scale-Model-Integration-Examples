@@ -41,9 +41,11 @@ naiveFutPred = process_output(naiveModel$posteriorSamples[[1]], transformations,
 naiveValidPred = process_output(naiveModel$posteriorSamples[[1]], transformations, newData = validationClimate, do.transform=TRUE, SE=FALSE, credInterval=FALSE)
 
 # integrated predictions
-intPresPred = process_output(integratedModel$posteriorSamples[[1]], transformations, newData=presClimate, do.transform=TRUE)
-intFutPred = process_output(integratedModel$posteriorSamples[[1]], transformations, newData=futClimate, do.transform=TRUE)
-intValidPred = process_output(integratedModel$posteriorSamples[[1]], transformations, newData = validationClimate, do.transform=TRUE, SE=FALSE, credInterval=FALSE)
+# drop integration terms from the posterior
+intPosterior = integratedModel$posteriorSamples[[1]][,colnames(integratedModel$posteriorSamples[[1]]) %in% integratedModel$variables$parameter]
+intPresPred = process_output(intPosterior, transformations, newData=presClimate, do.transform=TRUE)
+intFutPred = process_output(intPosterior, transformations, newData=futClimate, do.transform=TRUE)
+intValidPred = process_output(intPosterior, transformations, newData = validationClimate, do.transform=TRUE, SE=FALSE, credInterval=FALSE)
 
 predictions = cbind(maple[,1:2], naivePresPred, naiveFutPred, intPresPred, intFutPred)
 

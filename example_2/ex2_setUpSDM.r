@@ -25,7 +25,7 @@ library(glm2)
 load("dat/maple.rdata")
 source("ex2_Functions.r")
 
-responseColumns = 18:19
+responseColumns = 20:21
 predictorColumns <- c(6,8,12) # need to subselect predictors due to collinearity
 futureColumns <- predictorColumns+6 
 stepScope <- list( lower = cbind(weightedPresence, weightedN) ~ 1, upper = generate_formula(maple, responseColumns, predictorColumns))
@@ -87,5 +87,5 @@ starting_values <- setup_starting_values(variables, stepModel)
 # plot.new()
 # quilt.plot(mapleAll[,1], mapleAll[,2], predictions[,1], legend.only=T, col=bpy.colors(), zlim=c(0,1), add=F, smallplot=c(0.2,0.4, 0.05,0.95), bigplot=c(0,0,0,0))	
 # dev.off()
-
+# 
 save(stepModel, variables, starting_values, file="results/stepResults.rdata")
