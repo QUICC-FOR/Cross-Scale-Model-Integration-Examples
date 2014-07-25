@@ -44,14 +44,15 @@ set_mcmc_settings = function() {
 			)	
 	} else {
 		result = list(
-			n.chains = 4,
+			# the full version does no burnin and runs for a very long time
+			# this allows the user to inspect the traces and manually discard the
+			# appropriate number of burnin samples
+			# runs on a single chain (since jags is not parallel) to allow for the longest
+			# possible markov chain
+			n.chains = 1,
 			n.adapt = 1000,
-			burninMin = 50000,
-			startingSampleSize = 10000,
-			thin = 5,
-			burninMax = 300000,
-			finalSampleSize = 100000,
-			mpsrfThreshold = 1.1,
+			thin = 50,
+			finalSampleSize = 100000,		# sample size AFTER thinning
 			dataProportion = 1,
 			validationSize = 1/3 # proportion of dataset to be reserved for validation
 			)
