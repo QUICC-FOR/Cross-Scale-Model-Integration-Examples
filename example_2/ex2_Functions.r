@@ -130,7 +130,7 @@ make_model_text = function(vars, responseName = "weightedPresence", weightName =
 }
 
 linear_predictor = function(vars, phenofitPredictionName = "phenofit") {
-	mod = ("logit(pr[i]) = b0")
+	mod = ("logit(pr[i]) <- b0")
 	if(nrow(vars) > 1) {
 		for(i in 2:nrow(vars)) {
 			mod = paste(mod, " + ", vars$parameter[i], " * ", vars$varNames[i], "[i]", sep="")
@@ -139,9 +139,9 @@ linear_predictor = function(vars, phenofitPredictionName = "phenofit") {
 	}
 	mod = paste(mod, "\n", 
 		phenofitPredictionName, "[i] ~ dbeta(p[i],q[i])\n",
-		"p[i] = prPh[i] * phi\n",
-		"q[i] = (1-prPh[i]) * phi\n",
-		"logit(prPh[i]) = b_Ph0 + b_Ph1 * pr[i] + b_Ph2 * pr[i]^2",
+		"p[i] <- prPh[i] * phi\n",
+		"q[i] <- (1-prPh[i]) * phi\n",
+		"logit(prPh[i]) <- b_Ph0 + b_Ph1 * pr[i] + b_Ph2 * pr[i]^2",
 		sep="")
 		return(mod)
 }
@@ -158,7 +158,7 @@ prior = function(vars) {
 		"b_Ph1 ~ dnorm(0,0.001)\n",
 		"b_Ph2 ~ dnorm(0,0.001)\n",
 		"## uninformative prior for phi from Gelman 2006\n",
-		"phi = U^2\n",
+		"phi <- U^2\n",
 		"U ~ dunif(0,50)", sep="")
 	return(pr)
 }
