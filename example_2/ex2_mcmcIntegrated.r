@@ -98,7 +98,7 @@ if(MCMC_TEST_MODE) {
 	# get posterior samples
 	integratedModel$jagsModel = jags.model(integratedModel$modelFilename, data = integratedModel$mcmcData, n.chains=1, n.adapt=settings$n.adapt)
 
-	n.iter = settings$finalSampleSize * thin
+	n.iter = settings$finalSampleSize * settings$thin
 	iters.done = 0
 	iterSize = 500000
 	while(iters.done < n.iter) {
@@ -117,7 +117,7 @@ if(MCMC_TEST_MODE) {
 			attr(integratedModel$posteriorSamples, 'mcpar') = c(a1[1], a2[2], a1[3])
 		}
 		name = paste('results/int_', round(iters.done/1000), 'k.rdata', sep='')
-		save(integratedModel$posteriorSamples, file=name)				
+		save(integratedModel, file=name)				
 		iters.done = iters.done + iterSize
 	}
 }
