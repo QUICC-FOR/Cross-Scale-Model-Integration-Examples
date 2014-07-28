@@ -142,10 +142,23 @@ linear_predictor = function(vars, phenofitPredictionName = "phenofit") {
 		phenofitPredictionName, "[i] ~ dbeta(p[i],q[i])\n",
 		"p[i] <- prPh[i] * phi\n",
 		"q[i] <- (1-prPh[i]) * phi\n",
-		"logit(prPh[i]) <- b_Ph0 + b_Ph1 * pr[i] + b_Ph2 * pr[i]^2",
+		"logit(prPh[i]) <- b_Ph0 + b_Ph1 * prFut[i] + b_Ph2 * prFut[i]^2\n",
+		future_linear_predictor(vars),
 		sep="")
 		return(mod)
 }
+
+future_linear_predictor <- function(vars) {
+	mod <- ("logit(prFut[i]) <- b0")
+	if(nrow(vars) > 1) {
+		for(i in 2:nrow(vars)) {
+			mod <- paste(mod, " + ", vars$parameter[i], " * fut_", vars$varNames[i], "[i]", sep="")
+			if(vars$powers[i] > 1) mod <- paste(mod, "^", vars$powers[i], sep="")
+		}
+	}
+	return(mod)
+}
+
 
 prior = function(vars) {
 	pr = c()
