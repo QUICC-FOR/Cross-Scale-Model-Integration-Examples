@@ -46,7 +46,7 @@ naiveValidPred = predict(naiveModel, newdata=validationClimate, type='response',
 
 # integrated predictions
 # first drop extra integration terms from the posterior
-intPosterior = integratedModel$posteriorSamples[[1]][,colnames(integratedModel$posteriorSamples[[1]]) %in% integratedModel$variables$parameter]
+intPosterior = integratedModel$posteriorSamples[,colnames(integratedModel$posteriorSamples) %in% integratedModel$variables$parameter]
 intPresPred = process_output(intPosterior, newData=presClimate)
 intFutPred = process_output(intPosterior, newData=futClimate)
 intValidPred = process_output(intPosterior, newData = validationClimate, SE=FALSE, credInterval=FALSE)

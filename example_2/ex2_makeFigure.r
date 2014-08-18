@@ -95,3 +95,4 @@ mtext(meanScaleTitle, line=0.5, cex = titleCEX)
 image(x=seq(errorZlims[1],errorZlims[2],length.out=101), z=matrix(seq(errorZlims[1], errorZlims[2],length.out=100), 
 	nrow=100, ncol=1), zlim=errorZlims, col=errorColors, yaxt='n', xlab='', ylab='', useRaster=T)
 mtext(errorScaleTitle, line=0.5, cex = titleCEX)
+dev.off()
