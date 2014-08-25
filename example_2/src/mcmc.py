@@ -39,41 +39,63 @@ def make_response_function(respData):
 
 
 class Sampler(object):
-    def __init__(self, priors, response, predictors, initialValues = None, autoAdapt = True, verbose = False):
+    def __init__(self, priors, response, predictors, initialValues = None, autoAdapt = True, 
+      verbose = False, outputFile = 'mcmc_output.csv'):
         self.verbose = verbose
         self.priors = priors
         self.response = response
         self.predictors = predictors
         self.samplesTaken = 0
-        self._nParams = self.priors.shape[0]
+        self.outputFileName = outputFile
         self.posteriorSamples = self._currentState = None
+        self._nParams = self.priors.shape[0]
         self._tuning = np.ones(self._nParams)
-        self.set_initial_values(initialValues)
         self._completedIterations = 0
         self._retainPreAdaptationSamples = False
         self._autoAdaptIncrement = 1000
         self._targetAcceptanceRate = (0.27, 0.33)
         self._adapted = False
         self._adaptationRate = 1.1
+        self._maxAdaptation = 50000
+        self._flushOnWrite = False
+        self._firstWriteComplete = False
+        self._outputIncrement = 100000
+        self.set_initial_values(initialValues)
         if autoAdapt:
             self.auto_adapt()
+            
+    def run_sampler(self, numSamples):
+        numCompleted = 0
+        while numCompleted < numSamples:
+            samplesToTake = (numSamples - numCompleted) if (numSamples - numCompleted < 
+              self._outputIncrement) else self._outputIncrement
+            newSamples = self._do_sample(samplesToTake, verbose = self.verbose)
+            self._add_samples(newSamples)
+            numCompleted += samplesToTake
+            print("MCMC Iteration " + str(self.samplesTaken) + "; current job completed " + 
+              str(numCompleted) + " of " + str(numSamples))
+            self._write_samples()
     
     def set_initial_values(self, inits = None):
         """Define initial values for all parameters
         WILL NEED TO CHANGE WITH MODEL SPECIFICATION (assumes all priors are normal)"""
         if inits is None or inits.shape[0] != self.priors.shape[0]:
+            print("Automatically generating initial values")
             inits = np.zeros(self.priors.shape[0])
             for i in range(self.priors.shape[0]):
                 inits[i] = np.random.normal(self.priors[i,0], self.priors[i,1],1)
-        self._currentState = inits
-        self.posteriorSamples = self._currentState.copy()
+        self._currentState = inits.copy()
+        self.posteriorSamples = np.empty((0, self._nParams))
 
     def auto_adapt(self):
         """High level interface for automatically adapting the sampler.
         Runs until all samplers are running within an internally-specified efficiency
         interval"""
-        while not self._adapted:
+        adaptAttempts = 0
+        print("Starting automatic adaptation...")
+        while not self._adapted and not adaptAttempts >= self._maxAdaptation:
             samples, acceptanceRates = self._do_sample(self._autoAdaptIncrement, adapt=True)
+            adaptAttempts += self._autoAdaptIncrement
             self._adapted = True
             for k in range(self._nParams):
                 if acceptanceRates[k] < self._targetAcceptanceRate[0]:
@@ -82,8 +104,15 @@ class Sampler(object):
                 elif acceptanceRates[k] > self._targetAcceptanceRate[1]:
                     self._tuning[k] *= self._adaptationRate
                     self._adapted = False
-            if self.verbose: print("Adapting: acceptance rates: " + str(acceptanceRates) + " with tuning parameters: " + str(self._tuning))
-            if self._retainPreAdaptationSamples: self._add_samples(samples)
+            if self.verbose: print("Adapting: acceptance rates: " + str(acceptanceRates) +
+              " with tuning parameters: " + str(self._tuning))
+            if not self._retainPreAdaptationSamples:
+                samples = np.reshape(self._currentState.copy(), (1,self._nParams))
+            self._add_samples(samples)
+        if self._adapted:
+            print("Adaptation completed successfully")
+        else:
+            raise RuntimeError("Automatic adaptation failed after " + str(adaptAttempts) + " iterations")
         
     def _do_sample(self, numIterations, adapt=False, verbose=False):
         samples = np.empty(shape=(numIterations, self._nParams))
@@ -98,7 +127,7 @@ class Sampler(object):
             for k in indices:
                 proposedVal = self._propose_parameter(k)
                 nAccepted[k] += self._choose_value(proposedVal, k, Y, samples)
-            samples[i,:] = self._currentState.copy()
+            samples[i,:] = self._currentState
             if verbose: print self._currentState
         self.samplesTaken += numIterations
         if adapt:
@@ -122,7 +151,7 @@ class Sampler(object):
         else:
             return False
     
-    def _add_samples(samples):
+    def _add_samples(self, samples):
         if self.posteriorSamples is None:
             self.posteriorSamples = samples
         else:
@@ -157,6 +186,19 @@ class Sampler(object):
         for xx,th in zip(x, theta[1:]):
             psi += xx*th
         return psi
+        
+    def _write_samples(self):
+        if self._flushOnWrite and self._firstWriteComplete:
+            mode = 'a'
+        else:
+            mode = 'w'
+        with open(self.outputFileName, mode) as file:
+            np.savetxt(file, self.posteriorSamples, delimiter=',')
+        if self._flushOnWrite:
+            self.posteriorSamples = None
+        if not self._firstWriteComplete:
+            self._firstWriteComplete = True
+        
 
 
 def inv_logit(x):

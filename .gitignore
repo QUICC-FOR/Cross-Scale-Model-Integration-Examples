@@ -12,3 +12,5 @@
 !results/predictions.rdata
 
 *.history
+
+*.pyc
