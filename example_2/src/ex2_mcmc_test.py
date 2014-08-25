@@ -8,5 +8,4 @@ predictors = rawData[:,0]
 predictors = np.reshape(predictors, (len(predictors), 1))
 phenofit = rawData[:,1]
 inits = np.array([1.,4.])
-
-mcmc.do_mcmc(priors, phenofit, predictors, 1000, inits)
+sampler = mcmc.Sampler(priors, mcmc.make_response_function(phenofit), predictors, inits, verbose=True)
