@@ -53,7 +53,7 @@ class Sampler(object):
         self._completedIterations = 0
         self._retainPreAdaptationSamples = False
         self._autoAdaptIncrement = 1000
-        self._targetAcceptanceRate = (0.27, 0.33)
+        self._targetAcceptanceRate = (0.27, 0.34)
         self._adapted = False
         self._adaptationRate = 1.1
         self._maxAdaptation = 50000
@@ -97,22 +97,29 @@ class Sampler(object):
             samples, acceptanceRates = self._do_sample(self._autoAdaptIncrement, adapt=True)
             adaptAttempts += self._autoAdaptIncrement
             self._adapted = True
+            if self.verbose: print("Adapting: acceptance rates: " + str(acceptanceRates) +
+              " with tuning parameters: " + str(self._tuning))
             for k in range(self._nParams):
-                if acceptanceRates[k] < self._targetAcceptanceRate[0]:
+                if acceptanceRates[k] < self._targetAcceptanceRate[0]/2.0:
+                    self._tuning[k] /= 2.0*self._adaptationRate
+                    self._adapted = False                    
+                elif acceptanceRates[k] < self._targetAcceptanceRate[0]:
                     self._tuning[k] /= self._adaptationRate
+                    self._adapted = False
+                elif acceptanceRates[k] > self._targetAcceptanceRate[1]*2.0:
+                    self._tuning[k] *= 2.0*self._adaptationRate
                     self._adapted = False
                 elif acceptanceRates[k] > self._targetAcceptanceRate[1]:
                     self._tuning[k] *= self._adaptationRate
                     self._adapted = False
-            if self.verbose: print("Adapting: acceptance rates: " + str(acceptanceRates) +
-              " with tuning parameters: " + str(self._tuning))
             if not self._retainPreAdaptationSamples:
                 samples = np.reshape(self._currentState.copy(), (1,self._nParams))
             self._add_samples(samples)
         if self._adapted:
             print("Adaptation completed successfully")
         else:
-            raise RuntimeError("Automatic adaptation failed after " + str(adaptAttempts) + " iterations")
+            raise RuntimeWarning("Automatic adaptation failed after " + str(adaptAttempts) + 
+              " iterations with tuning parameters " + str(self._tuning))
         
     def _do_sample(self, numIterations, adapt=False, verbose=False):
         samples = np.empty(shape=(numIterations, self._nParams))
@@ -145,6 +152,7 @@ class Sampler(object):
         acceptanceProb = np.exp(self.log_posterior_prob(Y, proposedParams, k) - 
            self.log_posterior_prob(Y, self._currentState, k))
         testVal = np.random.uniform(0,1,1)
+        
         if testVal < acceptanceProb:
             self._currentState[k] = proposedVal
             return True
@@ -166,7 +174,7 @@ class Sampler(object):
         k: the index in parameters of the current parameter being evaluated
         """    
         # calculate conditional likelihood
-        sumlogl = 0.0
+        sumlogl = np.longdouble(0.0)
         for i in range(len(Y)):
             x = self.predictors[i,:]
             y = Y[i]
@@ -175,7 +183,7 @@ class Sampler(object):
         # incorporate the prior for the kth parameter (all others are constant)
         # assumes a normal prior for all parameters
         sumlogl += np.log(scipy.stats.norm(self.priors[k,0], self.priors[k,1]).pdf(parameters[k]))
-        return sumlogl
+        return float(sumlogl)
 
     def model_linear_predictor(self, x, theta):
         '''this function must change with model specification, though it is quite general
