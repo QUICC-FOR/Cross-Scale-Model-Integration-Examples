@@ -32,12 +32,14 @@ source("ex2_Functions.r")
 presClimate = mapleAll[,which(colnames(maple) %in% unique(variables$varNames))]
 futClimate = mapleAll[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(variables$varNames))]
 validationClimate = mapleValidation[,which(colnames(maple) %in% unique(variables$varNames))]
+validationFutClimate = mapleValidation[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(variables$varNames))]
 colnames(futClimate) = colnames(presClimate)
 
 # apply the transformations used in the calibration data to the projection datasets
 presClimate = as.data.frame(sapply(names(presClimate), function(name) transformations[[name]]$forward(presClimate[,name])))
 futClimate = as.data.frame(sapply(names(futClimate), function(name) transformations[[name]]$forward(futClimate[,name])))
 validationClimate = as.data.frame(sapply(names(validationClimate), function(name) transformations[[name]]$forward(validationClimate[,name])))
+validationFutClimate = as.data.frame(sapply(names(validationFutClimate), function(name) transformations[[name]]$forward(validationFutClimate[,name])))
 
 # produce predictions for the naive model
 naivePresPred = predict(naiveModel, newdata=presClimate, type='response', se.fit=TRUE)
@@ -45,11 +47,13 @@ naiveFutPred = predict(naiveModel, newdata=futClimate, type='response', se.fit=T
 naiveValidPred = predict(naiveModel, newdata=validationClimate, type='response', se.fit=FALSE)
 
 # integrated predictions
-# first drop extra integration terms from the posterior
-intPosterior = integratedModel$posteriorSamples[,colnames(integratedModel$posteriorSamples) %in% integratedModel$variables$parameter]
+intPosterior = integratedModel
 intPresPred = process_output(intPosterior, newData=presClimate)
 intFutPred = process_output(intPosterior, newData=futClimate)
+
+# validation
 intValidPred = process_output(intPosterior, newData = validationClimate, SE=FALSE, credInterval=FALSE)
+intValidPredFut = process_output(intPosterior, newData = validationFutClimate, SE=FALSE, credInterval=FALSE)
 
 predictions = cbind(mapleAll[,1:2], naivePresPred$fit, naivePresPred$se.fit, naiveFutPred$fit, naiveFutPred$se.fit, intPresPred, intFutPred)
 
@@ -58,8 +62,11 @@ colnames(predictions) = c("long", "lat",
 	'intPresent', 'intPresentSE', 'intPresentLower', 'intPresentUpper',
 	'intFuture', 'intFutureSE', 'intFutureLower', 'intFutureUpper')
 
-validation = list(data = cbind(mapleValidation[,1:3], naiveValidPred, intValidPred))
-colnames(validation$data) = c('long', 'lat', 'presence', 'naive', 'integrated')
+validation = list(data = cbind(mapleValidation[,1:5], naiveValidPred, intValidPred))
+colnames(validation$data) = c('long', 'lat', 'presence', 'phenofitPres', 'phenofitFut', 'naive', 'integrated')
+
+validation$integratedPresR2 = cor(validation$data$phenofitPres, validation$data$integrated)^2
+validation$integratedPresR2 = cor(validation$data$phenofitPres, validation$data$integrated)^2
 # this fails on older versions of R, so wrapped in try to finish the script
 try({
 	validation$naiveROC = ROC(validation$data$presence, validation$data$naive)

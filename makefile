@@ -43,16 +43,25 @@ example_2/dat/ex2_currentClim.rdata example_2/dat/ex2_futureClim.rdata example_2
 	cd example_2; Rscript ex2_prepMapleData.r
 
 #### step 2: use a stepwise regression to build the naive model
-#### can be run concurrently with step 2b
 example_2/results/naiveModel.rdata: example_2/ex2_naiveModel.r example_2/ex2_Functions.r \
 example_2/dat/maple.rdata
 	cd example_2; Rscript ex2_naiveModel.r
 
-### step 3: run the integrated model via jags 
-### note that they are very CPU intensive; expect hours to days of runtime on a typical desktop computer
+### step 3: run the integrated model
+### requires python, numpy, and scipy
+### note that this is very CPU intensive; expect hours to days of runtime on a typical desktop computer
 example_2/results/integratedModel.rdata: example_2/ex2_mcmcIntegrated.r \
-example_2/ex2_Functions.r example_2/results/naiveModel.rdata example_2/dat/maple.rdata
+example2/results/integratedModel.csv example_2/results/naiveModel.rdata
 	cd example_2; Rscript ex2_mcmcIntegrated.r
+
+example2/results/integratedModel.csv: example2/integratedModel.py example2/mcmc.py \
+example2/dat/integratedModelData.csv
+	cd example_2; python integrated_model.py
+
+example2/dat/integratedModelData.csv: example_2/ex2_prepIntegrated.r results/naiveModel.rdata \
+dat/maple.rdata
+	cd example_2; Rscript ex2_prepIntegrated.r
+
 
 # step 4: process results
 # note that this step is very memory intensive; expect multiple GBs of memory usage, with lots of swapping
