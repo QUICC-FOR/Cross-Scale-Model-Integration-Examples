@@ -48,4 +48,4 @@ intData = data.frame(
 	sum_prcp3 = maple$sum_prcp^3,
 	phenofit = maple$Phenofit_HadA2
 )
-write.csv(intData, file='testData.csv', row.names = FALSE)
+write.csv(intData, file='dat/integratedModelData.csv', row.names = FALSE)

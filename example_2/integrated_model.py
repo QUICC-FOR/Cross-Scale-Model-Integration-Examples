@@ -35,7 +35,7 @@ predictors = rawData[:,0:8]
 phenofit = rawData[:,8]
 
 sampler = mcmc.Sampler(priors, mcmc.make_response_function(phenofit), predictors, inits, 
-  outputFile = "results/integratedModel.csv", verbose=True)
+  outputFileName = "results/integratedModel.csv", verbose=True)
 sampler.verbose = False
 sampler.run_sampler(1000000)
 

@@ -8,7 +8,7 @@ make_response_function(respData):
     a random simulated dataset
 
 Sampler(priors, response, predictors, initialValues = None, autoAdapt = True, 
-      verbose = False, outputFile = 'mcmc_output.csv')
+      verbose = False, outputFileName = 'mcmc_output.csv')
     Sampler class for performing all the mcmc work. See help(Sampler) for details.
 
 inv_logit(x):
