@@ -32,7 +32,7 @@ priors = priors[c(1, order(row.names(priors)))[-(nrow(priors)+1)],]
 write.csv(priors, file='dat/integratedPriors.csv', row.names = FALSE)
 
 inits = data.frame(inits = unlist(starting_values()))
-write.csv(inits, file='dat/integradtedModelInits.csv', row.names = FALSE)
+write.csv(inits, file='dat/integratedInits.csv', row.names = FALSE)
 
 ## unfortunately, this part must be done manually, and must match the model description
 ## it is very important that the order of the columns matches the order in priors and inits
@@ -48,4 +48,4 @@ intData = data.frame(
 	sum_prcp3 = maple$sum_prcp^3,
 	phenofit = maple$Phenofit_HadA2
 )
-write.csv(intData, file='dat/integratedModelData.csv', row.names = FALSE)
+write.csv(intData, file='dat/integratedData.csv', row.names = FALSE)

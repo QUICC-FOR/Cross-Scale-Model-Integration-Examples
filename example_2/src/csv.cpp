@@ -1,6 +1,7 @@
 #include "csv.hpp"
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 
 
 using std::string;
@@ -11,6 +12,11 @@ CSV::CSV (const char * filename, size_t header)
 	// parse the input file
 	std::ifstream inputFile;
 	inputFile.open(filename);
+	if(!inputFile.is_open()) {
+		std::stringstream err;
+		err << "Failed to open file <" << filename << ">\n";
+		throw std::runtime_error(err.str());
+	}
 	string line;
 	
 	if(header > 0) {
@@ -24,6 +30,10 @@ CSV::CSV (const char * filename, size_t header)
 	}
 	inputFile.close();
 }
+
+
+CSV::CSV()
+{ }
 
 
 vector<vector<double> > CSV::data() const

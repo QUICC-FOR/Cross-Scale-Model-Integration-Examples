@@ -10,7 +10,16 @@ class CSV {
   	std::vector<std::vector<double> > data() const;
   	std::vector<double> columns(size_t colNum) const ;
   	std::vector<std::vector<double> > columns(size_t start, size_t end) const;
+
+	/*
+		CSV object constructor
+		filename: name of the csv file to open
+		header: number of header rows to skip
+		
+		throws a runtime error if opening file fails
+	*/
   	CSV(const char * filename, size_t header = 0);
+  	CSV();
 
   private:
 	std::vector<std::vector<double> > _data;

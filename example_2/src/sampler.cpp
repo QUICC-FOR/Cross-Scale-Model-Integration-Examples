@@ -8,12 +8,13 @@
 #include <stdexcept>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
-#include <omp.h>
 #include "sampler.hpp"
 
 using std::vector;
 using std::cout;
 using std::cerr;
+
+#define S_NUM_THREADS 6
 
 
 // unnamed namespace for file-global objects
@@ -57,7 +58,14 @@ void Sampler::run(const size_t n)
 		do_sample(newSamples, samplesToTake);
 		add_samples(newSamples);
 		numCompleted += samplesToTake;
-		cerr << "MCMC Iteration " << samplesTaken << "; current job completed " << numCompleted << " of " << n << '\n';
+		
+		time_t rawtime;
+		time(&rawtime);
+		struct tm * timeinfo = localtime(&rawtime);
+		char fmtTime [20];
+		strftime(fmtTime, 20, "%F %T", timeinfo);
+		 
+		cerr << fmtTime << "   MCMC Iteration " << samplesTaken << "; current job completed " << numCompleted << " of " << n << '\n';
 		output();
 	}
 }
@@ -84,8 +92,8 @@ int verbose, bool autoAdapt) :
 priors(priors), response(response), predictors(predictors), tuningParameters(tuningParameters), verbose(verbose),
 
 // magic numbers here are default values that have no support for initialization via parameters
-retainPreAdaptationSamples(true), autoAdaptIncrement(1000), targetAcceptanceRateInterval {0.27, 0.34},
-adaptationRate(1.1), maxAdaptation(50000), flushOnWrite(true), outputIncrement(10000),
+retainPreAdaptationSamples(true), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
+adaptationRate(1.1), maxAdaptation(100000), flushOnWrite(true), outputIncrement(50000),
 preventFittedZeroesOnes(true)
 {
 
@@ -199,7 +207,7 @@ long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<doubl
 	long double sumlogl = 0;
 
 	const int nDataPoints = Y.size();
-	#pragma omp parallel num_threads(3)
+	#pragma omp parallel num_threads(S_NUM_THREADS)
 	{
 	#pragma omp for reduction(+:sumlogl)
 	for(int i = 0; i < nDataPoints; i++) {

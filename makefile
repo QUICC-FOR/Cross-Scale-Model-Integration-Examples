@@ -48,15 +48,14 @@ example_2/dat/maple.rdata
 	cd example_2; Rscript ex2_naiveModel.r
 
 ### step 3: run the integrated model
-### requires python, numpy, and scipy
-### note that this is very CPU intensive; expect hours to days of runtime on a typical desktop computer
-example2/dat/integratedModelData.csv: example_2/ex2_prepIntegrated.r results/naiveModel.rdata \
+### requires the integrated_model binary, which must be built separately before running these steps
+### note that this is very CPU intensive
+example2/dat/integratedData.csv: example_2/ex2_prepIntegrated.r results/naiveModel.rdata \
 dat/maple.rdata
 	cd example_2; Rscript ex2_prepIntegrated.r
 
-example2/results/integratedModel.csv: example2/integratedModel.py example2/mcmc.py \
-example2/dat/integratedModelData.csv
-	cd example_2; python integrated_model.py
+example2/results/integratedModel.csv: example2/integrated_model example2/dat/integratedModelData.csv
+	cd example_2; ./integrated_model >>results/integratedModel.csv
 
 example_2/results/integratedModel.rdata: example_2/ex2_mcmcIntegrated.r \
 example2/results/integratedModel.csv example_2/results/naiveModel.rdata

@@ -33,7 +33,7 @@ presClimate = mapleAll[,which(colnames(maple) %in% unique(variables$varNames))]
 futClimate = mapleAll[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(variables$varNames))]
 validationClimate = mapleValidation[,which(colnames(maple) %in% unique(variables$varNames))]
 validationFutClimate = mapleValidation[,which(substr(colnames(maple),5, nchar(colnames(maple))) %in% unique(variables$varNames))]
-colnames(futClimate) = colnames(presClimate)
+colnames(futClimate) = colnames(validationFutClimate) = colnames(presClimate)
 
 # apply the transformations used in the calibration data to the projection datasets
 presClimate = as.data.frame(sapply(names(presClimate), function(name) transformations[[name]]$forward(presClimate[,name])))
