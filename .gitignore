@@ -17,3 +17,5 @@
 *.csv
 
 *.o
+example_2/src/integrated
+example_2/integrated

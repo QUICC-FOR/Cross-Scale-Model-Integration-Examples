@@ -4,6 +4,7 @@
 #define SAMPLER_DEBUG
 
 #include <vector>
+#include <cstdlib>
 
 class Sampler {
   public:

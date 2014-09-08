@@ -274,7 +274,7 @@ class Sampler(object):
             p = inv_logit(self.model_linear_predictor(x, parameters))
             if self._guardFittedZerosOnes and (p == 0 or p == 1):
                 p = np.nextafter(p, np.abs(1 - p))  # prevents nan or inf with 0 or 1 probs
-            sumlogl += y * np.log(np.power(p,y)) + (1-y) * np.log(1-p) # binomial density
+            sumlogl += y * np.log(p) + (1-y) * np.log(1-p) # binomial density
         # incorporate the prior for the kth parameter (all others are constant)
         # assumes a normal prior for all parameters
         sumlogl += np.log(scipy.stats.norm(self.priors[k,0], self.priors[k,1]).pdf(parameters[k]))
