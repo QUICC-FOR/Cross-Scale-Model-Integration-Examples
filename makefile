@@ -55,7 +55,7 @@ dat/maple.rdata
 	cd example_2; Rscript ex2_prepIntegrated.r
 
 example2/results/integratedModel.csv: example2/integrated_model example2/dat/integratedModelData.csv
-	cd example_2; ./integrated_model >>results/integratedModel.csv
+	cd example_2; ./integrated_model >results/integratedModel.csv
 
 example_2/results/integratedModel.rdata: example_2/ex2_mcmcIntegrated.r \
 example2/results/integratedModel.csv example_2/results/naiveModel.rdata
@@ -67,6 +67,12 @@ example2/results/integratedModel.csv example_2/results/naiveModel.rdata
 # step 4: process results
 # note that this step is very memory intensive; expect multiple GBs of memory usage, with lots of swapping
 # runtime can be quite long, especially if there isn't enough system RAM and lots of swapping is needed
+# new way is better: takes a few seconds, but need to check to make sure output is correct
+example_2/results/integratedStats.csv: src/stats results/ results/integratedModelThinned.csv \
+dat/integratedData.csv
+	cd src; ./stats >../results/integratedStats.csv
+
+# will need to update this script to deal with the new script above
 example_2/results/predictions.rdata: example_2/ex2_processResults.r example_2/dat/maple.rdata \
 example_2/results/naiveModel.rdata example_2/results/integratedModel.rdata example_2/ex2_Functions.r
 	cd example_2; Rscript ex2_processResults.r

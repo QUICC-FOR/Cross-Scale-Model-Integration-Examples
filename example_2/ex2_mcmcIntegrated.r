@@ -24,7 +24,7 @@ library(coda)
 load('results/naiveModel.rdata')
 
 thinLength = 50
-burnin = 300000
+burnin = 500000
 
 
 thin = function(x, n) {
@@ -33,12 +33,13 @@ thin = function(x, n) {
 }
 
 integratedModel = read.csv("results/integratedModel.csv", header=FALSE, stringsAsFactors=FALSE)
-for(i in 1:ncol(integratedModel)) integratedModel[,i] = as.numeric(integratedModel[,i])
+#for(i in 1:ncol(integratedModel)) integratedModel[,i] = as.numeric(integratedModel[,i])
 colnames(integratedModel) = variables$parameter
 startVal = burnin + 1
 endVal = nrow(integratedModel)
 integratedModel = integratedModel[(burnin+1):nrow(integratedModel),]
 integratedModel = thin(integratedModel, thinLength)
+write.table(integratedModel, "results/integratedModelThinned.csv", sep=',', col.names=FALSE, row.names=FALSE)
 integratedModel = mcmc(integratedModel, start = startVal, end = endVal, thin = thinLength)
 
 save(integratedModel, file="results/integratedModel.rdata")
