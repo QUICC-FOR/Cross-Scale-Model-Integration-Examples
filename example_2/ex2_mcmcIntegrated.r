@@ -24,7 +24,7 @@ library(coda)
 load('results/naiveModel.rdata')
 
 thinLength = 50
-burnin = 0
+burnin = 300000
 
 
 thin = function(x, n) {

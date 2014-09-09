@@ -38,14 +38,14 @@ write.csv(inits, file='dat/integratedInits.csv', row.names = FALSE)
 ## it is very important that the order of the columns matches the order in priors and inits
 ## finally, the response (phenofit predictions) must come last
 intData = data.frame(
-	ddeg1 = maple$ddeg,
-	ddeg2 = maple$ddeg^2,
-	ddeg3 = maple$ddeg^3,
-	pToPET1 = maple$pToPET,
-	pToPET2 = maple$pToPET^2,
-	sum_prcp1 = maple$sum_prcp,
-	sum_prcp2 = maple$sum_prcp^2,
-	sum_prcp3 = maple$sum_prcp^3,
+	ddeg1 = maple$fut_ddeg,
+	ddeg2 = maple$fut_ddeg^2,
+	ddeg3 = maple$fut_ddeg^3,
+	pToPET1 = maple$fut_pToPET,
+	pToPET2 = maple$fut_pToPET^2,
+	sum_prcp1 = maple$fut_sum_prcp,
+	sum_prcp2 = maple$fut_sum_prcp^2,
+	sum_prcp3 = maple$fut_sum_prcp^3,
 	phenofit = maple$Phenofit_HadA2
 )
 write.csv(intData, file='dat/integratedData.csv', row.names = FALSE)
