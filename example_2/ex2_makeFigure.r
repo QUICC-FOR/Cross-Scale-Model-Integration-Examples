@@ -19,7 +19,6 @@
 # produce the figure for the second example
 
 
-
 load("results/predictions.rdata")
 load("dat/maple.rdata")
 source("ex2_Functions.r")

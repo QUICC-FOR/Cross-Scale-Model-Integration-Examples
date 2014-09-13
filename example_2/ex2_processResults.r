@@ -48,14 +48,16 @@ naiveValidPred = predict(naiveModel, newdata=validationClimate, type='response',
 
 # integrated predictions
 intPosterior = integratedModel
-intPresPred = process_output(intPosterior, newData=presClimate)
-intFutPred = process_output(intPosterior, newData=futClimate)
+# intPresPred = process_output(intPosterior, newData=presClimate)
+# intFutPred = process_output(intPosterior, newData=futClimate)
+intPredictions = read.csv("src/predictions.csv")
+# intPredictions$fut_mean = process_output(intPosterior, newData=futClimate, SE=FALSE, credInterval=FALSE)$prediction
 
 # validation
 intValidPred = process_output(intPosterior, newData = validationClimate, SE=FALSE, credInterval=FALSE)
 intValidPredFut = process_output(intPosterior, newData = validationFutClimate, SE=FALSE, credInterval=FALSE)
 
-predictions = cbind(mapleAll[,1:2], naivePresPred$fit, naivePresPred$se.fit, naiveFutPred$fit, naiveFutPred$se.fit, intPresPred, intFutPred)
+predictions = cbind(mapleAll[,1:2], naivePresPred$fit, naivePresPred$se.fit, naiveFutPred$fit, naiveFutPred$se.fit, intPredictions)
 
 colnames(predictions) = c("long", "lat", 
 	'naivePresent', 'naivePresentSE', 'naiveFuture', 'naiveFutureSE',

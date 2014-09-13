@@ -41,5 +41,29 @@ integratedModel = integratedModel[(burnin+1):nrow(integratedModel),]
 integratedModel = thin(integratedModel, thinLength)
 write.table(integratedModel, "results/integratedModelThinned.csv", sep=',', col.names=FALSE, row.names=FALSE)
 integratedModel = mcmc(integratedModel, start = startVal, end = endVal, thin = thinLength)
-
 save(integratedModel, file="results/integratedModel.rdata")
+
+
+## prep the data to calculate the predictions
+load('dat/maple.rdata')
+# maplePredict = mapleAll[,c(1,2,4,5,6,6,6,12,12,8,8,8,13,13,13,19,19,15,15,15)]
+maplePredict = mapleAll[,c(6,12,8,13,19,15)]
+maplePredict$ddeg = transformations$ddeg$forward(maplePredict$ddeg)
+# maplePredict$ddeg.1 = maplePredict$ddeg^2
+# maplePredict$ddeg.2 = maplePredict$ddeg^3
+maplePredict$sum_prcp = transformations$sum_prcp$forward(maplePredict$sum_prcp)
+# maplePredict$sum_prcp.1 = maplePredict$sum_prcp^2
+# maplePredict$sum_prcp.2 = maplePredict$sum_prcp^3
+maplePredict$pToPET = transformations$pToPET$forward(maplePredict$pToPET)
+# maplePredict$pToPET.1 = maplePredict$pToPET^2
+maplePredict$fut_ddeg = transformations$ddeg$forward(maplePredict$fut_ddeg)
+# maplePredict$fut_ddeg.1 = maplePredict$fut_ddeg^2
+# maplePredict$fut_ddeg.2 = maplePredict$fut_ddeg^3
+maplePredict$fut_sum_prcp = transformations$sum_prcp$forward(maplePredict$fut_sum_prcp)
+# maplePredict$fut_sum_prcp.1 = maplePredict$fut_sum_prcp^2
+# maplePredict$fut_sum_prcp.2 = maplePredict$fut_sum_prcp^3
+maplePredict$fut_pToPET = transformations$pToPET$forward(maplePredict$fut_pToPET)
+# maplePredict$fut_pToPET.1 = maplePredict$fut_pToPET^2
+write.table(maplePredict, "dat/predictionData.csv", sep=",", col.names=FALSE, row.names=FALSE)
+
+
