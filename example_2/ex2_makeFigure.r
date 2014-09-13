@@ -58,7 +58,6 @@ meanScaleTitle = "Suitability"
 
 errorZlims = range(errorPredictions)
 errorColors = colorRampPalette(c("#ffffff", "#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"), interpolate='spline', space="rgb", bias=1.3)(200)
-errorTitles = paste(errorTitles, "SE", sep=" ")
 errorScaleTitle = "Posterior Standard Error"
 
 
