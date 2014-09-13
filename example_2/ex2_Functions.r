@@ -80,7 +80,7 @@ process_output = function(posteriorSample, newData, SE = TRUE, credInterval = TR
 	# predict the prob of presence for each point in newData
 	# assumes the FIRST parameter in posteriorSample is the intercept
 	predictedPrPresenceMean = mean(posteriorSample[,1])
-	predictedPrPresenceReps = matrix(0, posteriorSample[,1], nrow = nrow(newData), ncol=nrow(posteriorSample) )
+	if(calcAllReps) predictedPrPresenceReps = matrix(posteriorSample[,1], nrow = nrow(newData), ncol=nrow(posteriorSample), byrow=T )
 	currentCol = 2
 	while(currentCol <= ncol(posteriorSample)) {
 		ndColumn = which(colnames(newData) == substr(colnames(posteriorSample)[currentCol], parPrefix + 1, nchar(colnames(posteriorSample)[currentCol]) - parEnd))

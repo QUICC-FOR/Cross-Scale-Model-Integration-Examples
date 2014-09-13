@@ -12,3 +12,11 @@
 !results/predictions.rdata
 
 *.history
+
+*.pyc
+*.csv
+
+*.o
+example_2/src/integrated
+example_2/src/stats
+example_2/integrated_model

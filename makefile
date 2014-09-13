@@ -43,20 +43,36 @@ example_2/dat/ex2_currentClim.rdata example_2/dat/ex2_futureClim.rdata example_2
 	cd example_2; Rscript ex2_prepMapleData.r
 
 #### step 2: use a stepwise regression to build the naive model
-#### can be run concurrently with step 2b
 example_2/results/naiveModel.rdata: example_2/ex2_naiveModel.r example_2/ex2_Functions.r \
 example_2/dat/maple.rdata
 	cd example_2; Rscript ex2_naiveModel.r
 
-### step 3: run the integrated model via jags 
-### note that they are very CPU intensive; expect hours to days of runtime on a typical desktop computer
+### step 3: run the integrated model
+### requires the integrated_model binary, which must be built separately before running these steps
+### note that this is very CPU intensive
+example2/dat/integratedData.csv: example_2/ex2_prepIntegrated.r results/naiveModel.rdata \
+dat/maple.rdata
+	cd example_2; Rscript ex2_prepIntegrated.r
+
+example2/results/integratedModel.csv: example2/integrated_model example2/dat/integratedModelData.csv
+	cd example_2; ./integrated_model >results/integratedModel.csv
+
 example_2/results/integratedModel.rdata: example_2/ex2_mcmcIntegrated.r \
-example_2/ex2_Functions.r example_2/results/naiveModel.rdata example_2/dat/maple.rdata
+example2/results/integratedModel.csv example_2/results/naiveModel.rdata
 	cd example_2; Rscript ex2_mcmcIntegrated.r
+
+
+
 
 # step 4: process results
 # note that this step is very memory intensive; expect multiple GBs of memory usage, with lots of swapping
 # runtime can be quite long, especially if there isn't enough system RAM and lots of swapping is needed
+# new way is better: takes a few seconds, but need to check to make sure output is correct
+example_2/results/integratedStats.csv: src/stats results/ results/integratedModelThinned.csv \
+dat/integratedData.csv
+	cd src; ./stats >../results/integratedStats.csv
+
+# will need to update this script to deal with the new script above
 example_2/results/predictions.rdata: example_2/ex2_processResults.r example_2/dat/maple.rdata \
 example_2/results/naiveModel.rdata example_2/results/integratedModel.rdata example_2/ex2_Functions.r
 	cd example_2; Rscript ex2_processResults.r

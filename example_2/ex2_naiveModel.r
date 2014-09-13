@@ -20,7 +20,11 @@
 # this is used to help quickly determine the variables to include in the SDM, as well as 
 # to determine starting values to give to the MCMC algorithm
 
-library(glm2)
+if(!require("glm2", character.only = TRUE)) {
+	glmfunc = glm
+} else {
+	glmfunc = glm2
+}
 
 load("dat/maple.rdata")
 source("ex2_Functions.r")
@@ -31,7 +35,7 @@ futureColumns = predictorColumns+6
 stepScope = list( lower = cbind(weightedPresence, weightedN) ~ 1, upper = generate_formula(maple, responseColumns, predictorColumns))
 
 # run a stepwise regression, using BIC because it is a bit more parsimonious than AIC
-naiveModel = step( glm2(stepScope$lower, family=binomial, data=maple), scope=stepScope, direction="both", k = log(nrow(maple)))
+naiveModel = step( glmfunc(stepScope$lower, family=binomial, data=maple), scope=stepScope, direction="both", k = log(nrow(maple)))
 
 # update the model to include all lower-order terms when higher-order terms are included
 variables = variable_names(naiveModel)
