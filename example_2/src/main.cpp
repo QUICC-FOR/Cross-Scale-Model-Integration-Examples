@@ -34,7 +34,7 @@ int main(void)
 
 	size_t verbose = 1;
 	Sampler sampler = Sampler(priors, phenofit, predictors, inits, tuning, verbose);
-	sampler.run(5000000);
+	sampler.run(50000000);
 
 	return 0;
 }
