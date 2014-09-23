@@ -1,22 +1,19 @@
 # figures can be easily generated on the client side and are not tracked
 *.pdf
 
+# some latex crap
+*.aux
+*.log
+
 # jags model files are generated on-the-fly by R scripts
 *.jags
 
-# some binary files can be generated easily, so no need to track
+# data files don't need to be tracked unless explicitely included
 *.rdata
-
-# others are computationally expensive, and should be tracked
-!results/integratedModel.rdata
-!results/predictions.rdata
-
-*.history
-
-*.pyc
 *.csv
+!example_2/dat/AceSac.csv
+!example_2/dat/currentClim.rdata
+!example_2/dat/futureClim.rdata
 
-*.o
-example_2/src/integrated
-example_2/src/stats
-example_2/integrated_model
+# binaries
+example_2/bin/*
