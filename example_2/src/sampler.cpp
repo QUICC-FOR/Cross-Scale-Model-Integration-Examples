@@ -1,3 +1,38 @@
+/*
+Model integration example 2: sampler.cpp
+	
+	  Copyright 2014 Matthew V Talluto, Isabelle Boulangeat, Dominique Gravel
+	
+	  This program is free software; you can redistribute it and/or modify
+	  it under the terms of the GNU General Public License as published by
+	  the Free Software Foundation; either version 3 of the License, or (at
+	  your option) any later version.
+	  
+	  This program is distributed in the hope that it will be useful, but
+	  WITHOUT ANY WARRANTY; without even the implied warranty of
+	  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+	  General Public License for more details.
+	
+	  You should have received a copy of the GNU General Public License
+	  along with this program; if not, write to the Free Software
+	  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+	
+	
+
+
+	Primary implementation of the Metropoolis-within-Gibbs sampler
+	See the file sampler.hpp for the public interface to this implementation
+	
+	This program takes advantage of the openMP library to speed execution on multi-core
+	systems. See the makefile and associated documentation for instructions on building
+	for multi-threaded usage. The global constant S_NUM_THREADS defines how many threads
+	to use; for ideal performance, this should be 1 or 2 less than the number of physical
+	CPU cores on your machine; the value used here (6) was tested for optimum performance
+	on an 8-core Mac Pro.
+
+*/
+
+
 #include <iostream>
 #include <ctime>
 #include <cassert>
@@ -14,10 +49,10 @@ using std::vector;
 using std::cout;
 using std::cerr;
 
+// total number of threads to be used if the program is built for multi-threaded use
 #define S_NUM_THREADS 6
 
 
-// unnamed namespace for file-global objects
 namespace {
 	gsl_rng * set_up_rng() {
 		gsl_rng * newRNG = gsl_rng_alloc(gsl_rng_mt19937);
@@ -143,7 +178,7 @@ void Sampler::auto_adapt()
 			add_samples(newSamples);
 	}
 	if(!retainPreAdaptationSamples)
-		posteriorSamples.push_back(currentState);	// safe only the new "starting value" if we are not saving the adaptation samples
+		posteriorSamples.push_back(currentState);	// save only the new "starting value" if we are not saving the adaptation samples
 
 	if(adapted)
 		cerr << "Adaptation completed successfully\n";
@@ -174,11 +209,8 @@ int Sampler::choose_parameter(const long double proposal, const size_t i, const 
 	// returns 1 if proposal is accepted, 0 otherwise
 	vector<double> proposedParameters = currentState;
 	proposedParameters[i] = proposal;
-// std::cerr << "getting acceptance prob...\n";
-// std::cerr << "Current likelihood: " << log_posterior_prob(Y, currentState, i) << "\n";
 	long double acceptanceProb = exp( log_posterior_prob(Y, proposedParameters, i) - log_posterior_prob(Y, currentState, i));
 	double testVal = gsl_rng_uniform(rng);
-// std::cerr << " test value = " << testVal << "\n";
 	if(testVal < acceptanceProb) {
 		currentState[i] = proposal;
 		return 1;
