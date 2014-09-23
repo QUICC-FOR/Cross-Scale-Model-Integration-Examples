@@ -1,26 +1,46 @@
+#### individual scripts for example 1:
+## order of operations to run the full analysis:
+# 1: Rscript 1-m1.r
+# 2: Rscript 2-m2.r
+# 3: Rscript 3-mm.r
+# 4: Rscript 4-makeSamplingFig.r ex1_Sampling.pdf
+# 5: Rscript 5-makePrecipFig.r ex1_precip.pdf
+# 6: Rscript 6-makeMapFig.r ex1_map.pdf
 
-example1: example_1/ex1_Sampling.pdf example_1/ex1_precip.pdf example_1/ex1_map.pdf
+SI: ELEtallutoSA1.pdf
 
-example_1/ex1_Sampling.pdf: example_1/ex1_makeSamplingFig.r example_1/ex1_globals.r \
-example_1/dat/ex1_m1.rdata example_1/dat/ex1_m2.rdata
-	cd example_1; Rscript ex1_makeSamplingFig.r ex1_Sampling.pdf
+figures: ex1_Sampling.pdf ex1_precip.pdf ex1_map.pdf
 
-example_1/ex1_precip.pdf: example_1/ex1_makePrecipFig.r example_1/ex1_globals.r \
-example_1/dat/ex1_m1.rdata example_1/dat/ex1_m2.rdata example_1/dat/ex1_mm.rdata 
-	cd example_1; Rscript ex1_makePrecipFig.r ex1_precip.pdf
+analysis: dat/ex1_mm.rdata
 
-example_1/ex1_map.pdf: example_1/ex1_makeMapFig.r example_1/ex1_globals.r \
-example_1/dat/ex1_m1.rdata example_1/dat/ex1_m2.rdata example_1/dat/ex1_mm.rdata
-	cd example_1; Rscript ex1_makeMapFig.r ex1_map.pdf
+### build the SI appendix pdf
+ELEtallutoSA1.pdf: tex/ELEtallutoSA1.tex
+	cd tex; pdflatex ELEtallutoSA1
+	mv tex/ELEtallutoSA1.pdf ELEtallutoSA1.pdf
 
-example_1/dat/ex1_m1.rdata: example_1/ex1_m1.r example_1/ex1_globals.r 
-	cd example_1; Rscript ex1_m1.r
 
-example_1/dat/ex1_m2.rdata: example_1/ex1_m2.r example_1/ex1_globals.r 
-	cd example_1; Rscript ex1_m2.r
+# scripts for performing the analysis
+dat/ex1_m1.rdata: 1-m1.r ex1_globals.r 
+	Rscript 1-m1.r
 
-example_1/dat/ex1_mm.rdata: example_1/ex1_mm.r example_1/ex1_globals.r \
-example_1/dat/ex1_m2.rdata example_1/dat/ex1_m1.rdata 
-	cd example_1; Rscript ex1_mm.r
+dat/ex1_m2.rdata: 2-m2.r ex1_globals.r 
+	Rscript 2-m2.r
+
+dat/ex1_mm.rdata: 3-mm.r ex1_globals.r dat/ex1_m2.rdata dat/ex1_m1.rdata 
+	Rscript 3-mm.r
+
+
+# Scripts for building the figures
+ex1_Sampling.pdf: 4-makeSamplingFig.r ex1_globals.r dat/ex1_m1.rdata dat/ex1_m2.rdata
+	Rscript 4-makeSamplingFig.r ex1_Sampling.pdf
+
+ex1_precip.pdf: 5-makePrecipFig.r ex1_globals.r dat/ex1_m1.rdata dat/ex1_m2.rdata \
+dat/ex1_mm.rdata 
+	Rscript 5-makePrecipFig.r ex1_precip.pdf
+
+ex1_map.pdf: 6-makeMapFig.r ex1_globals.r dat/ex1_m1.rdata dat/ex1_m2.rdata \
+dat/ex1_mm.rdata
+	Rscript 6-makeMapFig.r ex1_map.pdf
+
 
 
