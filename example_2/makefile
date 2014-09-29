@@ -46,20 +46,21 @@ results/integratedModel.rdata dat/ne_110m_ocean/ne_110m_ocean.shp
 
 
 ## extra stuff just to make sure all dependencies are resolved	    
+## these are created by the scripts above, so all are no-operation
 dat/integratedPriors.csv: dat/naive_model.rdata
-	noop
+	;
 
 dat/integratedInits.csv: dat/naive_model.rdata
-	noop
+	;
 
 dat/integratedData.csv: dat/naive_model.rdata
-	noop
+	;
 	
 results/integratedModelThinned.csv: results/integratedModel.rdata
-	noop
+	;
 	
 dat/predictionData.csv: results/integratedModel.rdata
-	noop
+	;
 
 ################
 #
