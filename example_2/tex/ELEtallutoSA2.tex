@@ -1,0 +1,109 @@
+\documentclass[11pt]{article}
+
+%% ----------------------------------
+%
+%     Packages to be used in the final manuscript
+%
+%% ----------------------------------
+
+
+\usepackage[margin=1in]{geometry}
+
+% use proper unicode fonts
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{xcolor}
+\definecolor{light-gray}{gray}{0.85}
+\fboxsep2pt
+\newcommand{\code}[1]{\colorbox{light-gray}{\ttfamily #1}}
+
+%% ----------------------------------
+%
+%     END PREAMBLE
+%
+%% ----------------------------------
+
+\begin{document}
+%% ----------------------------------
+%
+%     TITLE PAGE
+%
+%% ----------------------------------
+
+
+%% ----------------------------------
+%
+%     INTRODUCTION
+%
+%% ----------------------------------
+
+{\Large \flushleft
+Appendix S2: Code, data, and information for model integration example 2
+}
+
+\section{Building and running the model}
+Building the model requires an installation of R as well as a C++ compiler (see \textbf{Dependencies} below for information on all software required to fully build and run the model).
+For users familiar with Gnu Make, a makefile is provided as a guide. To perform the compilation of the Metropolis sampler (and thus to check for errors in the build process that would prevent the model executing properly), use \code{make model}. Once the model is built, there are five primary steps to run the model. To run them all in series, use \code{make ex2.pdf}. The exact procedures for each step are documented in detail in the source files, and summarized below.
+
+\subsection{Setup}
+\code{Rscript 1-setup\_naive\_model.r} or \\
+\code{make dat/naive\_model.rdata}
+
+This step formats the raw data, builds the naive model (which also provides the structure for the metamodel), and sets up the data to be used as input for running the integrated model.
+We divided the dataset into calibration and validation subsets.
+To avoid over representing absences in the calibration set, we initially identified the ratio of presences to absences in the original data (approximately 1:13), then randomly chose 1/3 of the presences for validation and 2/3 for calibration, and finally chose absences for the calibration set to maintain the original presence:absence ratio.
+For validation, we used a number of absences equal to the number of presences in the validation set, selected from the remaining absences. 
+
+To select the form of the naive model (and thus the metamodel), we used stepwise regression with BIC as the evaluation criteria.
+Exploratory analysis revealed that there were collinearities within the predictor variables.
+Thus, we only included three variables in the stepwise regression: number of degree days (\code{ddeg}), mean summer precipitation (\code{sum\_prcp}), and the ratio of mean annual precipitation to potential evapotranspiration (\code{pToPET}).
+The search scope included all models with linear, quadratic, and cubic terms for all three variables.
+
+\subsection{Integration}
+\code{./bin/integrated\_model >results/integratedModel.csv} or \\
+\code{make results/integratedModel.csv}
+
+This step starts the Metropolis sampler to estimate the parameters of the integrated model. 
+Specific details can be found in the C++ files in the src directory of this appendix.
+The model first reads data from files produced in the previous step, then performs some automatic adaptation to improve the efficiency of the sampler, and finally runs for (by default) 50,000,000 iterations.
+
+\subsection{Discard burn-in and thin samples}
+\code{Rscript 3-process\_integrated.r} or \\
+\code{make results/integratedModel.rdata}
+
+We used preliminary runs with multiple chains to determine for how long the MCMC should be run before the chain converged on its stationary distribution and to choose a thinning interval.
+We discarded the first 500,000 samples as not representative of the posterior distribution of the parameters, and chose a thinning interval of 50 to reduce autocorrelation in the posterior samples.
+
+\subsection{Compute posterior distribution of predictions}
+\code{./bin/stats >results/integratedStats.csv} or \\
+\code{make results/integratedStats.csv}
+
+This is a C++ program that steps through each (thinned) posterior sample and predicts the present and future probability of presence at every point in the original (i.e., calibration+validation) dataset.
+The output is a table, where each row is a data point and the columns are the mean probability of presence, the standard error, the 5\% quantile, and the 95\% quantile for present and future climate.
+
+\subsection{Build the figure}
+\code{Rscript 5-make\_figure.r} or \\
+\code{make ex2.pdf}
+
+Using the predicted probabilities from Phenofit, the naive model, and the integrated model, this script will produce Figure 5 as found in the manuscript.
+
+
+\section{Dependencies}
+Much of the data preparation and analysis uses R. In addition to base R, the following packages are required:
+\begin{itemize}
+	\item sp
+	\item fields
+	\item rgdal
+	\item glm2
+	\item coda
+	\item pROC
+\end{itemize}
+
+To fully build and run this example, a C++ compiler that is compliant with C++11 is required. 
+We recommend an openMP-compliant compiler for best performance (GCC 4.4 or greater will work).
+The makefile includes make procedures for building the project and includes a node for building the entire model: use \code{make model} at the command line to invoke it.
+However, compilation procedures vary greatly from platform to platform.
+The makefile should be considered a guide for compiling the program, but it will likely have to be edited before it functions properly.
+Finally, this project uses the Gnu Scientific Libraries (GSL); a copy of this is required to compile the project.
+\end{document}

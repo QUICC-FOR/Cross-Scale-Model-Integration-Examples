@@ -1,0 +1,88 @@
+\documentclass[11pt]{article}
+
+%% ----------------------------------
+%
+%     Packages to be used in the final manuscript
+%
+%% ----------------------------------
+
+
+\usepackage[margin=1in]{geometry}
+
+% use proper unicode fonts
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{xcolor}
+\definecolor{light-gray}{gray}{0.85}
+\fboxsep2pt
+\newcommand{\code}[1]{\colorbox{light-gray}{\ttfamily #1}}
+
+%% ----------------------------------
+%
+%     END PREAMBLE
+%
+%% ----------------------------------
+
+\begin{document}
+%% ----------------------------------
+%
+%     TITLE PAGE
+%
+%% ----------------------------------
+
+
+%% ----------------------------------
+%
+%     INTRODUCTION
+%
+%% ----------------------------------
+
+{\Large \flushleft
+Appendix S1: Code, data, and information for model integration example 1
+}
+
+\section{Building and running the model}
+Building the model requires an installation of R, JAGS, and rjags (see \textbf{Dependencies} below for information on all software required to fully build and run the model).
+For users familiar with Gnu Make, a makefile is provided as a guide.
+To produce this PDF, use \code{make SI}. 
+To run the analyses, use \code{make analysis}.
+To produce the figures, use \code{make figures}.
+Additionally, global settings for controlling the analysis and the production of figures are contained in the file \code{ex1_globals.r}.
+There are a total of 4 steps to complete the analysis and build all figures.
+Complete details are documented in the included source files, and summaries are provided below.
+
+\subsection{Run the naive model (no integration)}
+\code{Rscript 1-m1.r} or \\
+\code{make dat/ex1_m1.rdata}
+
+This script will initiate a JAGS model that estimates the parameters of the metamodel with no conditioning on the information from the sub-model (i.e., the naive model).
+
+\subsection{Run the sub-model}
+\code{Rscript 2-m2.r} or \\
+\code{make dat/ex1_m2.rdata}
+
+\subsection{Run the metamodel}
+\code{Rscript 3-mm.r} or \\
+\code{make dat/ex1_mm.rdata}
+
+\subsection{Produce figures}
+\code{Rscript 4-makeSamplingFig.r ex1_Sampling.pdf} \\
+\code{Rscript 5-makePrecipFig.r ex1_precip.pdf} \\
+\code{Rscript 6-makeMapFig.r ex1_map.pdf}; or \\
+\code{make figures}
+
+
+\section{Dependencies}
+Much of the data preparation and analysis uses R. In addition to base R, the following packages are required:
+\begin{itemize}
+	\item sp
+	\item fields
+	\item rgdal
+	\item glm2
+	\item coda
+	\item pROC
+\end{itemize}
+
+JAGS
+\end{document}

@@ -1,0 +1,66 @@
+cat("hello")
+dbh <- scan()
+pctser <- scam()
+45.1612903226.8882175249.0301724134.1463414647.810218980.8498583570.29850746344.132653062.0057306594.1916167663.3240997234.3715846995.76923076910.4395604411.462450595.3030303035.21472392648.8764044934.220532322.7972027973.5019455252.0080321292.39726027411.351351355.241935484
+pctser <- scan()
+elev <- scan()
+dat <- data.frame(elev, pctser, dbh)
+head(dat)
+dat$he <- (elev > median(elev))
+dat
+with(dat[!dat$he,], cor(pctser, dbh))
+ser <- scan()
+ns <- scan()
+tot <- ser+ns
+cor(tot, pctser)
+cor(tot, dbh)
+ba <- scan()
+ba
+ba <- ba[-19]
+cor(ba, dbh)
+cor(ba, tot)
+dat$tot <- tot
+dat$ba <- ba
+cor(dat[!dat$he])
+cor(dat[!dat$he,])
+cor(dat)
+cor(dat[dat$he,])
+ctest <- function() {
+a <- runif(1)
+b <- runif(1)
+cor(a,b)}
+res <- sapply(1:1000, function(i) ctest())
+hist(res)
+head(res)
+ctest
+ctest()
+runif(1)
+ctest <- function() {
+a <- runif(3)
+b <- runif(3)
+cor(a,b)}
+res <- sapply(1:1000, function(i) ctest())
+hist(res)
+ctest <- function(n) {
+a <- runif(n)
+b <- runif(n)
+cor(a,b)
+}
+res <- sapply(1:1000, function(i) ctest(10))
+hist(res)
+res <- sapply(1:1000, function(i) ctest(5))
+hist(res)
+sum((res>0.7)/1000)
+res <- sapply(1:1000, function(i) ctest(10))
+sum((res>0.7)/1000)
+sum((abs(res>0.7))/1000)
+sum((abs(res)>0.7)/1000)
+res <- sapply(1:1000, function(i) ctest(5))
+sum((abs(res)>0.7)/1000)
+res <- sapply(1:1000, function(i) ctest(4))
+sum((abs(res)>0.7)/1000)
+res <- sapply(1:1000, function(i) ctest(3))
+sum((abs(res)>0.7)/1000)
+setwd("~/Documents/git_projects/Cross-Scale-Model-Integration-Examples/example_1")
+library(rjags)
+height <- 2.5

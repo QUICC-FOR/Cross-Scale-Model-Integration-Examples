@@ -1,2 +1,19 @@
-*.pdf	# figures can be easily generated on the client side and are not tracked
-*.jags	# jags model files are generated on-the-fly by R scripts
+# figures can be easily generated on the client side and are not tracked
+*.pdf
+
+# some latex crap
+*.aux
+*.log
+
+# jags model files are generated on-the-fly by R scripts
+*.jags
+
+# data files don't need to be tracked unless explicitely included
+*.rdata
+*.csv
+!example_2/dat/AceSac.csv
+!example_2/dat/currentClim.rdata
+!example_2/dat/futureClim.rdata
+
+# binaries
+example_2/bin/*
