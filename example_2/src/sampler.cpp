@@ -50,7 +50,7 @@ using std::cout;
 using std::cerr;
 
 // total number of threads to be used if the program is built for multi-threaded use
-#define S_NUM_THREADS 6
+#define S_NUM_THREADS 10
 
 
 namespace {

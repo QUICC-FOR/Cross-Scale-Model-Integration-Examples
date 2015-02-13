@@ -61,7 +61,18 @@ main = function()
 	# unfortunately, this part must be done manually, and must match the model description
 	# the order of the columns of intData must matchs the order in priors and inits
 	# finally, the response (phenofit predictions) must come last
-	intData = data.frame(
+	intData_Pres = data.frame(
+		ddeg1 = maple$calib$ddeg,
+		ddeg2 = maple$calib$ddeg^2,
+		ddeg3 = maple$calib$ddeg^3,
+		pToPET1 = maple$calib$pToPET,
+		pToPET2 = maple$calib$pToPET^2,
+		sum_prcp1 = maple$calib$sum_prcp,
+		sum_prcp2 = maple$calib$sum_prcp^2,
+		sum_prcp3 = maple$calib$sum_prcp^3,
+		phenofit = maple$calib$Phenofit_CRU
+	)
+	intData_Fut = data.frame(
 		ddeg1 = maple$calib$fut_ddeg,
 		ddeg2 = maple$calib$fut_ddeg^2,
 		ddeg3 = maple$calib$fut_ddeg^3,
@@ -76,7 +87,8 @@ main = function()
 	save(maple, naiveModel, file="dat/naive_model.rdata")
 	write.csv(priors, file='dat/integratedPriors.csv', row.names = FALSE)
 	write.csv(inits, file='dat/integratedInits.csv', row.names = FALSE)
-	write.csv(intData, file='dat/integratedData.csv', row.names = FALSE)
+	write.csv(intData_Pres, file='dat/integratedData_Pres.csv', row.names = FALSE)
+	write.csv(intData_Fut, file='dat/integratedData_Fut.csv', row.names = FALSE)
 }
 
 

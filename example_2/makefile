@@ -20,15 +20,23 @@ dat/naive_model.rdata: 1-setup_models.r dat/AceSac.csv dat/currentClim.rdata \
 dat/futureClim.rdata
 	Rscript 1-setup_models.r
 
-#### step 2: run the integrated model
+#### step 2a: run the future integrated model
 # requires the integrated_model binary, which must be built before running these steps
 # see the end of this makefile for this build procedure
 # note that this is very CPU intensive
-results/integratedModel.csv: bin/integrated_model dat/integratedData.csv \
+results/integratedModel_Fut.csv: bin/integrated_model dat/integratedData_Fut.csv \
 dat/integratedPriors.csv dat/integratedInits.csv
 	mkdir -p results
-	./bin/integrated_model >results/integratedModel.csv
+	./bin/integrated_model -r 20000000 -d dat/integratedData_Fut.csv \
+	>results/integratedModel_Fut.csv
 	
+#### step 2b: run the present integrated model
+results/integratedModel_Pres.csv: bin/integrated_model dat/integratedData_Pres.csv \
+dat/integratedPriors.csv dat/integratedInits.csv
+	mkdir -p results
+	./bin/integrated_model -r 5000000 -d dat/integratedData_Pres.csv \
+	>results/integratedModel_Pres.csv
+
 #### step 3: process the results (e.g., throw away burnin samples, thin results)
 results/integratedModel.rdata: 3-process_integrated.r results/integratedModel.csv \
 dat/naive_model.rdata
@@ -48,19 +56,16 @@ results/integratedModel.rdata dat/ne_110m_ocean/ne_110m_ocean.shp
 ## extra stuff just to make sure all dependencies are resolved	    
 ## these are created by the scripts above, so all are no-operation
 dat/integratedPriors.csv: dat/naive_model.rdata
-	;
 
 dat/integratedInits.csv: dat/naive_model.rdata
-	;
 
-dat/integratedData.csv: dat/naive_model.rdata
-	;
+dat/integratedData_Pres.csv: dat/naive_model.rdata
 	
+dat/integratedData_Fut.csv: dat/naive_model.rdata
+
 results/integratedModelThinned.csv: results/integratedModel.rdata
-	;
 	
 dat/predictionData.csv: results/integratedModel.rdata
-	;
 
 ################
 #

@@ -5,6 +5,9 @@
 *.aux
 *.log
 
+# R junk
+*.history
+
 # jags model files are generated on-the-fly by R scripts
 *.jags
 
