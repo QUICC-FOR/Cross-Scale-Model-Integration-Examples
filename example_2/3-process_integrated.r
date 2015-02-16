@@ -20,17 +20,15 @@
 #
 #
 #
-# takes the raw mcmc output from the python program and turns it into something
+# takes the raw mcmc output and turns it into something
 # we can easily use in R
 # requires coda package
 #
 #
 
-library(coda)
-load('dat/naive_model.rdata')
 
-thinLength = 50
-burnin = 500000
+THIN_LEN = 50
+BURN_IN = 500000
 
 
 thin = function(x, n) {
@@ -38,16 +36,22 @@ thin = function(x, n) {
 	return(x[ind,])
 }
 
-integratedModel = read.csv("results/integratedModel.csv", header=FALSE, stringsAsFactors=FALSE)
-colnames(integratedModel) = naiveModel$variables$parameter
-startVal = burnin + 1
-endVal = nrow(integratedModel)
-integratedModel = integratedModel[(burnin+1):nrow(integratedModel),]
-integratedModel = thin(integratedModel, thinLength)
-integratedModel = mcmc(integratedModel, start = startVal, end = endVal, thin = thinLength)
+
+prep_integrated = function(im, naiveModel, burnin, thinInterval) {
+	require(coda, quietly = TRUE)
+	colnames(im) = naiveModel$variables$parameter
+	startVal = burnin + 1
+	endVal = nrow(im)
+	im = im[(burnin+1):nrow(im),]
+	im = thin(im, thinInterval)
+	im = mcmc(im, start = startVal, end = endVal, thin = thinInterval)
+}
 
 
-## prep the data to calculate the predictions
+
+
+## prep the predictors
+load('dat/naive_model.rdata')
 maplePredict = maple$all[,c(6,12,8,13,19,15)]
 maplePredict$ddeg = maple$transformations$ddeg$forward(maplePredict$ddeg)
 maplePredict$sum_prcp = maple$transformations$sum_prcp$forward(maplePredict$sum_prcp)
@@ -55,10 +59,43 @@ maplePredict$pToPET = maple$transformations$pToPET$forward(maplePredict$pToPET)
 maplePredict$fut_ddeg = maple$transformations$ddeg$forward(maplePredict$fut_ddeg)
 maplePredict$fut_sum_prcp = maple$transformations$sum_prcp$forward(maplePredict$fut_sum_prcp)
 maplePredict$fut_pToPET = maple$transformations$pToPET$forward(maplePredict$fut_pToPET)
-
-
-save(integratedModel, file="results/integratedModel.rdata")
-write.table(integratedModel, "results/integratedModelThinned.csv", sep=',', col.names=FALSE, row.names=FALSE)
 write.table(maplePredict, "dat/predictionData.csv", sep=",", col.names=FALSE, row.names=FALSE)
+
+
+
+# try to read integrated model from disk
+integratedModel_Pres = tryCatch(
+	read.csv("results/integratedModel_Pres.csv", header=FALSE, stringsAsFactors=FALSE),
+	error = function(e) {
+		warning(e)
+		return(NULL)
+	}
+)
+integratedModel_Fut = tryCatch(
+	read.csv("results/integratedModel_Fut.csv", header=FALSE, stringsAsFactors=FALSE),
+	error = function(e) {
+		warning(e)
+		return(NULL)
+	}
+)
+
+
+# prep the results from the present
+if(!is.null(integratedModel_Pres)) {
+	integratedModel_Pres = prep_integrated(integratedModel_Pres, naiveModel, BURN_IN, THIN_LEN)
+	save(integratedModel_Pres, file="results/integratedModel_Pres.rdata")
+	write.table(integratedModel_Pres, "results/integratedModel_Pres_Thinned.csv", sep=',', col.names=FALSE, row.names=FALSE)
+}
+
+
+# prep the results from the future
+if(!is.null(integratedModel_Fut)) {
+	integratedModel_Fut = prep_integrated(integratedModel_Fut, naiveModel, BURN_IN, THIN_LEN)
+	save(integratedModel_Fut, file="results/integratedModel_Fut.rdata")
+	write.table(integratedModel_Fut, "results/integratedModel_Fut_Thinned.csv", sep=',', col.names=FALSE, row.names=FALSE)
+}
+
+
+
 
 
