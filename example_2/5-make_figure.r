@@ -26,6 +26,8 @@
 
 
 
+
+
 main = function()
 {
 	require(fields)
@@ -33,85 +35,16 @@ main = function()
 	require(coda)
 	
 	load("dat/naive_model.rdata")
-	intPredictions = read.csv("results/integratedStats.csv")
-	load("results/integratedModel.rdata")
+	intPredictions_Pres = read.csv("results/integratedStats_Pres.csv")
+	intPredictions_Fut = read.csv("results/integratedStats_Fut.csv")
+	load("results/integratedModel_Pres.rdata")
+	load("results/integratedModel_Fut.rdata")
 	
-	predictions = process_predictions(maple, naiveModel, intPredictions, integratedModel)
-	ocean = readOGR(dsn="dat/ne_50m_ocean", layer="ne_50m_ocean")
-	lakes = readOGR(dsn="dat/ne_50m_lakes", layer="ne_50m_lakes")
-	mapleRange = readOGR(dsn="dat/acersacr", layer="acersacr")
-	# grab specific lakes
-	lkNames = c("Huron", "Michigan", "Superior", "Ontario", "Erie", "St. Clair")
-	grLakes = lakes[as.integer(sapply(lkNames, grep, lakes$name)),]
+	predictions_Pres = process_predictions(maple, naiveModel, intPredictions_Pres, integratedModel_Pres)
+	predictions_Fut = process_predictions(maple, naiveModel, intPredictions_Fut, integratedModel_Fut)
 
-	pdfFileName = "ex2.pdf"
-	pdfWidth = 7.5
-	pdfHeight = 5.25
-	titleCEX = 0.7
-	
-	# which columns to loop thru for mean and errors
-	meanCols = c(5,11)
-	SECols = meanCols + 1
-
-	## pick the data to display
-	latLimits = c(27,65)
-	longLimits = c(-105, -55)
-	predictionsSub = subset(predictions, in.range(lat, latLimits) & in.range(long, longLimits))
-	mapleAllSub = subset(maple$all, in.range(lat, latLimits) & in.range(long, longLimits))
-	latitude = predictionsSub[,2]
-	longitude = predictionsSub[,1]
-	meanPredictions = cbind(mapleAllSub$Phenofit_HadA2, predictionsSub[,meanCols])
-	errorPredictions = predictionsSub[,SECols]
-
-	## plotting settings
-	meanZlims = c(0,1)
-	meanColors = colorRampPalette(c("#ffffff", "#bdc9e1", "#045a8d", "#33338d", "#cc99ff"), interpolate='spline', bias=1, space="rgb")(200)
-	meanTitles = c("A. Phenofit", "B. Naive SDM", "C. Integrated")
-	errorTitles = c("D. Naive SDM SE", "E. Integrated SE")
-	meanScaleTitle = "Suitability"
-
-	errorZlims = range(errorPredictions)
-	errorColors = colorRampPalette(c("#ffffff", "#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"), interpolate='spline', space="rgb", bias=1.3)(200)
-	errorScaleTitle = "Posterior Standard Error"	
-
-
-	# produce the plot
-	pdf(file=pdfFileName, width=pdfWidth,height=pdfHeight)
-	rangeBorder = '#FF3333bb'
-	rangeLwd = 1.2
-	rangeCol = "#66666600"
-	plotLayout = matrix(c(
-		1,2,3,
-		6,4,5,
-		7,4,5),
-	  byrow=T, nrow=3)
-	layout(plotLayout, heights=c(1, 0.5, 0.5))
-	par(mar=c(1,1,1,1))
-
-	for(i in 1:ncol(meanPredictions)) {
-		quilt.plot(longitude, latitude, meanPredictions[,i], col=meanColors, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
-		plot(ocean, col="white", add=T)
-		plot(mapleRange[c(1,3,47,43),], border=rangeBorder, col=rangeCol, add=T, lwd=rangeLwd)
-		plot(grLakes, col="white", add=T)
-		mtext(meanTitles[i], adj=0, cex = titleCEX)
-	}
-
-	for(i in 1:ncol(errorPredictions)) {
-		quilt.plot(longitude, latitude, errorPredictions[,i], col=errorColors, zlim=errorZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
-		plot(ocean, col="white", add=T)
-		plot(mapleRange[c(1,3,47,43),], border=rangeBorder, col=rangeCol, add=T, lwd=rangeLwd)
-		plot(grLakes, col="white", add=T)
-		mtext(errorTitles[i], adj=0, cex = titleCEX)
-	}
-
-	## scale bars
-	par(mar=c(5,1,3,1))
-	image(x=seq(meanZlims[1],meanZlims[2],length.out=101), z=matrix(seq(meanZlims[1], meanZlims[2],length.out=100), 
-		nrow=100, ncol=1), zlim=meanZlims, col=meanColors, yaxt='n', xlab='', ylab='', useRaster=T)
-	mtext(meanScaleTitle, line=0.5, cex = titleCEX)
-	image(x=seq(errorZlims[1],errorZlims[2],length.out=101), z=matrix(seq(errorZlims[1], errorZlims[2],length.out=100), 
-		nrow=100, ncol=1), zlim=errorZlims, col=errorColors, yaxt='n', xlab='', ylab='', useRaster=T)
-	mtext(errorScaleTitle, line=0.5, cex = titleCEX)
+	make_figure(predictions_Fut, pdfFileName = "ex2_Fut.pdf", predictionMeanCols = 
+			c(5,11), predictionSECols = c(6,12),  phenofit = "Phenofit_HadA2")
 }
 
 
@@ -157,6 +90,80 @@ process_predictions = function(maple, naiveModel, intPredictions, intPosterior)
 
 
 in.range = function(x, lims) x >= lims[1] & x <= lims[2]
+
+make_figure = function(predictions, pdfFileName)
+{
+	ocean = readOGR(dsn="dat/ne_50m_ocean", layer="ne_50m_ocean")
+	lakes = readOGR(dsn="dat/ne_50m_lakes", layer="ne_50m_lakes")
+	mapleRange = readOGR(dsn="dat/acersacr", layer="acersacr")
+	# grab specific lakes
+	lkNames = c("Huron", "Michigan", "Superior", "Ontario", "Erie", "St. Clair")
+	grLakes = lakes[as.integer(sapply(lkNames, grep, lakes$name)),]
+
+	pdfWidth = 7.5
+	pdfHeight = 5.25
+	titleCEX = 0.7
+	
+	## pick the data to display
+	latLimits = c(27,65)
+	longLimits = c(-105, -55)
+	predictionsSub = subset(predictions, in.range(lat, latLimits) & in.range(long, longLimits))
+	mapleAllSub = subset(maple$all, in.range(lat, latLimits) & in.range(long, longLimits))
+	latitude = predictionsSub[,2]
+	longitude = predictionsSub[,1]
+	meanPredictions = cbind(mapleAllSub[,phenofit], predictionsSub[,predictionMeanCols])
+	errorPredictions = predictionsSub[,predictionSECols]
+
+	## plotting settings
+	meanZlims = c(0,1)
+	meanColors = colorRampPalette(c("#ffffff", "#bdc9e1", "#045a8d", "#33338d", "#cc99ff"), interpolate='spline', bias=1, space="rgb")(200)
+	meanTitles = c("A. Phenofit", "B. Naive SDM", "C. Integrated")
+	errorTitles = c("D. Naive SDM SE", "E. Integrated SE")
+	meanScaleTitle = "Probability of Presence"
+
+	errorZlims = range(errorPredictions)
+	errorColors = colorRampPalette(c("#ffffff", "#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"), interpolate='spline', space="rgb", bias=1.3)(200)
+	errorScaleTitle = "Posterior Standard Error"	
+
+
+	# produce the plot
+	pdf(file=pdfFileName, width=pdfWidth,height=pdfHeight)
+	rangeBorder = '#FF3333bb'
+	rangeLwd = 1.2
+	rangeCol = "#66666600"
+	plotLayout = matrix(c(
+		1,2,3,
+		6,4,5,
+		7,4,5),
+	  byrow=T, nrow=3)
+	layout(plotLayout, heights=c(1, 0.5, 0.5))
+	par(mar=c(1,1,1,1))
+
+	for(i in 1:ncol(meanPredictions)) {
+		quilt.plot(longitude, latitude, meanPredictions[,i], col=meanColors, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+		plot(ocean, col="white", add=T)
+		plot(mapleRange[c(1,3,47,43),], border=rangeBorder, col=rangeCol, add=T, lwd=rangeLwd)
+		plot(grLakes, col="white", add=T)
+		mtext(meanTitles[i], adj=0, cex = titleCEX)
+	}
+
+	for(i in 1:ncol(errorPredictions)) {
+		quilt.plot(longitude, latitude, errorPredictions[,i], col=errorColors, zlim=errorZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+		plot(ocean, col="white", add=T)
+		plot(mapleRange[c(1,3,47,43),], border=rangeBorder, col=rangeCol, add=T, lwd=rangeLwd)
+		plot(grLakes, col="white", add=T)
+		mtext(errorTitles[i], adj=0, cex = titleCEX)
+	}
+
+	## scale bars
+	par(mar=c(5,1,3,1))
+	image(x=seq(meanZlims[1],meanZlims[2],length.out=101), z=matrix(seq(meanZlims[1], meanZlims[2],length.out=100), 
+		nrow=100, ncol=1), zlim=meanZlims, col=meanColors, yaxt='n', xlab='', ylab='', useRaster=T)
+	mtext(meanScaleTitle, line=0.5, cex = titleCEX)
+	image(x=seq(errorZlims[1],errorZlims[2],length.out=101), z=matrix(seq(errorZlims[1], errorZlims[2],length.out=100), 
+		nrow=100, ncol=1), zlim=errorZlims, col=errorColors, yaxt='n', xlab='', ylab='', useRaster=T)
+	mtext(errorScaleTitle, line=0.5, cex = titleCEX)
+}
 
 
 main()

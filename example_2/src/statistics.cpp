@@ -43,6 +43,8 @@ Model integration example 2: statistics.cpp
 #include <cmath>
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_sort.h>
+#include <unistd.h> // for getopt
+#include <cstdlib>
 
 using std::vector;
 using std::cout;
@@ -50,6 +52,10 @@ using std::cerr;
 
 #define CI_LO 0.05
 #define CI_HI 0.95
+
+static const char * DATA_FILE = "results/integratedModelThinned.csv";
+void parse_args(int argc, char **argv);
+void print_help();
 
 long double inv_logit(long double val)
 {
@@ -59,15 +65,17 @@ long double inv_logit(long double val)
 		return exp(val) / (1.0 + exp(val));		
 }
 	
-int main(void) 
+int main(int argc, char **argv) 
 {
+	parse_args(argc, argv);
+
 	// input data
 	vector<vector<double> > mcmcDat;
 	vector<double> ddeg, pToPET, sum_prcp, fut_ddeg, fut_pToPET, fut_sum_prcp;
 	
 	CSV rawData;
 	try {
-		mcmcDat = CSV("results/integratedModelThinned.csv", 0).data();
+		mcmcDat = CSV(DATA_FILE, 0).data();
 		rawData = CSV("dat/predictionData.csv", 0);
 	}
 	catch (std::exception &e) {
@@ -125,3 +133,30 @@ int main(void)
 	return 0;
 }
 
+
+void parse_args(int argc, char **argv)
+{
+	int thearg;
+	while((thearg = getopt(argc, argv, "hd:")) != -1)
+	{
+		switch(thearg)
+		{
+			case 'h':
+				print_help();
+				break;
+			case 'd':			
+				DATA_FILE = optarg;
+				break;
+			case '?':
+				print_help();
+		}
+	}
+}
+
+void print_help()
+{
+	std::cerr << "Command line options:\n";
+	std::cerr << "    -h:             display this help\n";
+	std::cerr << "    -d <filname>:   use the file <filename> for the main data file\n";
+	exit(1);
+}

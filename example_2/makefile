@@ -27,7 +27,7 @@ dat/futureClim.rdata
 results/integratedModel_Fut.csv: bin/integrated_model dat/integratedData_Fut.csv \
 dat/integratedPriors.csv dat/integratedInits.csv
 	mkdir -p results
-	./bin/integrated_model -r 20000000 -d dat/integratedData_Fut.csv \
+	./bin/integrated_model -r 5000000 -d dat/integratedData_Fut.csv \
 	>results/integratedModel_Fut.csv
 	
 #### step 2b: run the present integrated model
@@ -38,18 +38,25 @@ dat/integratedPriors.csv dat/integratedInits.csv
 	>results/integratedModel_Pres.csv
 
 #### step 3: process the results (e.g., throw away burnin samples, thin results)
-results/integratedModel.rdata: 3-process_integrated.r results/integratedModel.csv \
-dat/naive_model.rdata
+results/integratedModel_Pres.rdata: 3-process_integrated.r results/integratedModel_Fut.csv \
+results/integratedModel_Pres.csv dat/naive_model.rdata
 	Rscript 3-process_integrated.r
 	
 #### step 4: compute statistics (mean & sd) on integrated model predictions
-results/integratedStats.csv: bin/stats results/integratedModelThinned.csv \
+stats: results/integratedStats_Pres.csv results/integratedStats_Fut.csv
+
+results/integratedStats_Pres.csv: bin/stats results/integratedModel_Pres_Thinned.csv \
 dat/predictionData.csv
-	./bin/stats >results/integratedStats.csv
+	./bin/stats -d results/integratedModel_Pres_Thinned.csv >results/integratedStats_Pres.csv
+
+results/integratedStats_Fut.csv: bin/stats results/integratedModel_Fut_Thinned.csv \
+dat/predictionData.csv
+	./bin/stats -d results/integratedModel_Fut_Thinned.csv >results/integratedStats_Fut.csv
 
 #### step 5: make the figure
-ex2.pdf: 5-make_figure.r dat/naive_model.rdata results/integratedStats.csv \
-results/integratedModel.rdata dat/ne_110m_ocean/ne_110m_ocean.shp
+ex2.pdf: 5-make_figure.r dat/naive_model.rdata results/integratedStats_Pres.csv \
+results/integratedStats_Fut.csv results/integratedModel_Pres.rdata \
+results/integratedModel_Fut.rdata dat/ne_110m_ocean/ne_110m_ocean.shp
 	Rscript 5-make_figure.r
 
 
@@ -63,9 +70,13 @@ dat/integratedData_Pres.csv: dat/naive_model.rdata
 	
 dat/integratedData_Fut.csv: dat/naive_model.rdata
 
-results/integratedModelThinned.csv: results/integratedModel.rdata
+results/integratedModel_Fut.rdata: results/integratedModel_Pres.rdata
+
+results/integratedModel_Pres_Thinned.csv: results/integratedModel_Pres.rdata
+
+results/integratedModel_Fut_Thinned.csv: results/integratedModel_Fut.rdata
 	
-dat/predictionData.csv: results/integratedModel.rdata
+dat/predictionData.csv: results/integratedModel_Pres.rdata
 
 ################
 #
