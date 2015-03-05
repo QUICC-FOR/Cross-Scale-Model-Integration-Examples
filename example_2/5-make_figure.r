@@ -45,6 +45,8 @@ main = function()
 
 	make_figure(predictions_Fut, pdfFileName = "ex2_Fut.pdf", predictionMeanCols = 
 			c(5,11), predictionSECols = c(6,12),  phenofit = "Phenofit_HadA2")
+	make_figure(predictions_Pres, pdfFileName = "ex2_Pres.pdf", predictionMeanCols = 
+			c(3,7), predictionSECols = c(4,8),  phenofit = "Phenofit_CRU")
 }
 
 
@@ -91,7 +93,7 @@ process_predictions = function(maple, naiveModel, intPredictions, intPosterior)
 
 in.range = function(x, lims) x >= lims[1] & x <= lims[2]
 
-make_figure = function(predictions, pdfFileName)
+make_figure = function(predictions, pdfFileName, predictionMeanCols, predictionSECols, phenofit)
 {
 	ocean = readOGR(dsn="dat/ne_50m_ocean", layer="ne_50m_ocean")
 	lakes = readOGR(dsn="dat/ne_50m_lakes", layer="ne_50m_lakes")
@@ -163,6 +165,8 @@ make_figure = function(predictions, pdfFileName)
 	image(x=seq(errorZlims[1],errorZlims[2],length.out=101), z=matrix(seq(errorZlims[1], errorZlims[2],length.out=100), 
 		nrow=100, ncol=1), zlim=errorZlims, col=errorColors, yaxt='n', xlab='', ylab='', useRaster=T)
 	mtext(errorScaleTitle, line=0.5, cex = titleCEX)
+	
+	dev.off()
 }
 
 
