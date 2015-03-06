@@ -120,11 +120,12 @@ void Sampler::output()
 
 
 Sampler::Sampler(vector<vector<double> > priors, vector<double> response,
-vector<vector<double> > predictors, vector<double> initialValues, vector<double> tuningParameters,
-int verbose, bool autoAdapt) :
+ vector<int> weights, vector<vector<double> > predictors, vector<double> initialValues, 
+vector<double> tuningParameters, bool simResponse, int verbose, bool autoAdapt) :
 
 // initializers for data/settings via the parameter list
-priors(priors), response(response), predictors(predictors), tuningParameters(tuningParameters), verbose(verbose),
+priors(priors), response(response), weight(weights), predictors(predictors), 
+tuningParameters(tuningParameters), verbose(verbose), simulateResponse(simResponse),
 
 // magic numbers here are default values that have no support for initialization via parameters
 retainPreAdaptationSamples(true), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
@@ -191,9 +192,17 @@ vector<int> Sampler::make_simulated_response() const
 {
 	vector<int> result;
 	result.reserve(response.size());
-	for(size_t i = 0; i < response.size(); i++) 
-		result.push_back(gsl_ran_bernoulli(rng, response[i]));
-
+	if(simulateResponse)
+	{
+		for(size_t i = 0; i < response.size(); i++) 
+			result.push_back(gsl_ran_bernoulli(rng, response[i]));
+	}
+	else
+	{
+		for(size_t i = 0; i < response.size(); i++) 
+			result.push_back(int(response[i]));
+	}
+	
 	return(result);
 }
 
@@ -204,12 +213,14 @@ double Sampler::propose_parameter(const size_t i) const
 }
 
 
-int Sampler::choose_parameter(const long double proposal, const size_t i, const vector<int> &Y)
+int Sampler::choose_parameter(const long double proposal, const size_t i, 
+		const vector<int> &Y, const vector<int> &N)
 {
 	// returns 1 if proposal is accepted, 0 otherwise
 	vector<double> proposedParameters = currentState;
 	proposedParameters[i] = proposal;
-	long double acceptanceProb = exp( log_posterior_prob(Y, proposedParameters, i) - log_posterior_prob(Y, currentState, i));
+	long double acceptanceProb = exp( log_posterior_prob(Y, N, proposedParameters, i) - 
+			log_posterior_prob(Y, N, currentState, i));
 	double testVal = gsl_rng_uniform(rng);
 	if(testVal < acceptanceProb) {
 		currentState[i] = proposal;
@@ -234,7 +245,8 @@ long double Sampler::model_linear_predictor(const vector<double> &x, const vecto
 
 
 
-long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<double> &params, const size_t i) const
+long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<int> &N, 
+		const vector<double> &params, const size_t i) const
 {
 	long double sumlogl = 0;
 
@@ -254,7 +266,9 @@ long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<doubl
 		if(preventFittedZeroesOnes && (p == 0.0 || p == 1.0))
 			p = nextafter(p, abs(1.0 - p));
 			
-		long double logl = Y[i] * log(p) + (1-Y[i])*log(1-p); // binomial density
+//		long double logl = Y[i] * log(p) + (1-Y[i])*log(1-p); // binomial density
+		long double logl = log(gsl_ran_binomial_pdf(Y[i], p, N[i]));
+		
 		sumlogl += logl;
 	}
 	}
@@ -275,12 +289,13 @@ vector<double> Sampler::do_sample(vector<vector<double> > &dest, size_t n)
 	for(size_t i = 0; i < nParams; i++) indices[i] = i;
 	
 	for(size_t i = 0; i < n; i++) {
-		vector<int> Y = make_simulated_response();
+		vector<int> Y = make_simulated_response();	// this does nothing if simulateResponse is False
+		
 		gsl_ran_shuffle(rng, indices, nParams, sizeof(size_t));
 		for(size_t j = 0; j < nParams; j++) {
 			size_t k = indices[j];
 			long double proposedVal = propose_parameter(k);
-			nAccepted[k] += choose_parameter(proposedVal, k, Y);
+			nAccepted[k] += choose_parameter(proposedVal, k, Y, weight);
 		}
 		dest.push_back(currentState);
 		

@@ -91,8 +91,11 @@ class Sampler {
   public:
   	void run(const size_t n);
 	Sampler(std::vector<std::vector<double> > priors, std::vector<double> response,
-		std::vector<std::vector<double> > predictors, std::vector<double> initialValues=std::vector<double>(), 
-		std::vector<double> tuningParameters=std::vector<double>(), int verbose=0, bool autoAdapt=true);
+			std::vector<int> weights,
+			std::vector<std::vector<double> > predictors, 
+			std::vector<double> initialValues=std::vector<double>(), 
+			std::vector<double> tuningParameters=std::vector<double>(), 
+			bool simResponse = false, int verbose=0, bool autoAdapt=true);
 
   private:
   	// methods
@@ -102,14 +105,18 @@ class Sampler {
   	void add_samples(const std::vector<std::vector<double> > &samples);
 	std::vector<int> make_simulated_response() const;
 	double propose_parameter(const size_t i) const;
-	int choose_parameter(const long double proposal, const size_t i, const std::vector<int> &Y);
-	long double log_posterior_prob(const std::vector<int> &Y, const std::vector<double> &params, const size_t i) const;
-	long double model_linear_predictor(const std::vector<double> &x, const std::vector<double> &params) const;
+	int choose_parameter(const long double proposal, const size_t i, 
+			const std::vector<int> &Y, const std::vector<int> &N);
+	long double log_posterior_prob(const std::vector<int> &Y, const std::vector<int> &N, 
+			const std::vector<double> &params, const size_t i) const;
+	long double model_linear_predictor(const std::vector<double> &x, 
+			const std::vector<double> &params) const;
 	void output();
   
   	// data
 	std::vector<std::vector<double> > priors;
 	std::vector<double> response;
+	std::vector<int> weight;	// size parameter of the binomial distribution
 	std::vector<std::vector<double> > predictors;
 	std::vector<std::vector<double> > posteriorSamples;
 	
@@ -130,6 +137,7 @@ class Sampler {
 	bool flushOnWrite;
 	size_t outputIncrement;
 	bool preventFittedZeroesOnes;
+	bool simulateResponse;
 };
 
 #endif
