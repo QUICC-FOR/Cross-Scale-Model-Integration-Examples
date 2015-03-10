@@ -22,12 +22,18 @@
 # runif(1,0,.Machine$integer.max)
 set.seed(626786234)
 
+# determine which predictors to use
+predictors=c("ddeg", "sum_prcp", "pToPET")
+
+
 library(argparse)
 # handle command line arguments
 parser = ArgumentParser()
 parser$add_argument("-v", "--validation", default=1/3, type="double", help="proportion of presences to use for validation")
 parser$add_argument("-d", "--datafile", default = "dat/raw/AceSac.csv", help="input file name")
 parser$add_argument("-o", "--outfile", default = "dat/mapleDat_processed.rds", help="RDS output file name")
+parser$add_argument("-p", "--prior", default='dat/mcmc/naivePriors.csv', help="output file for naive priors")
+parser$add_argument("-n", "--inits", default='dat/mcmc/naiveInits.csv', help="output file for naive inits")
 argList = parser$parse_args()
 
 rescale = function(x, return.functions=FALSE, stdev = 1)
@@ -74,7 +80,9 @@ rawData = rawData[complete.cases(rawData),c(1:5, 10:15, 18:23)]
 rawData = as.data.frame(append(rawData, list(pToPET = with(rawData, an_prcp/pet)), after=11))
 rawData = within(rawData, {fut_pToPET = fut_an_prcp/fut_pet})
 
-# add squared and cubed terms for all predictors
+
+# select only the predictors we're going to be using, along with squared and cubed terms
+rawData = rawData[,c(1:5, sapply(predictors, grep, colnames(rawData)))]
 predictors2 = predictors3 = rawData[,-(1:5)]
 predictors2 = predictors2^2
 predictors3 = predictors3^3
@@ -127,4 +135,59 @@ allData$calib$weightedPresence = wght*allData$calib$PresObs
 allData$calib$weightedN = rep(1, nrow(allData$calib))
 allData$calib$weightedN[allData$calib$PresObs == 1] = wght
 
+# save variable names in order for convenience
+allData$variables = as.vector(sapply(predictors, function(x) colnames(allData$calib)[grep(paste("^", x, "[1-9]?", sep=""), colnames(allData$calib))]))
+
 saveRDS(allData, argList$outfile)
+
+
+
+
+
+## prepare data for MCMC
+naivePriors = with(allData, data.frame(
+		mean = rep(0, length(variables) + 1),
+		sd = c(10, rep(2.5, length(variables))),
+		dist = rep(1, length(variables) + 1),
+		row.names = c("intercept", variables)))
+write.csv(naivePriors, file=argList$prior, row.names = FALSE)
+
+# use the prior distribution to draw random starts for the parameters
+naiveInits = sapply(1:nrow(naivePriors), function(i)
+{
+	with(naivePriors[i,],
+	{
+		func = ifelse(dist == 0, rnorm, rcauchy)
+		func(1, mean, sd)
+	})
+})
+write.csv(naiveInits, file=argList$inits, row.names = FALSE)
+
+
+presPredictors = allData$variables[-1]
+futPredictors = paste("fut_", presPredictors, sep="")
+
+
+naiveData_weighted = naiveData_unweighted = intData_Pres = allData$calib[,presPredictors]
+intData_Fut = allData$calib[,futPredictors]
+naiveData_weighted$response = allData$calib$weightedPresence
+naiveData_unweighted$response = allData$calib$PresObs
+intData_Pres$response = allData$calib$Phenofit_CRU
+intData_Fut$response = allData$calib$Phenofit_HadA2
+naiveData_weighted$weights = allData$calib$weightedN
+naiveData_unweighted$weights = intData_Pres$weights = intData_Fut$weights = rep(1, nrow(allData$calib))
+
+write.csv(intData_Fut, file='dat/mcmc/integratedData_Fut.csv', row.names = FALSE)
+write.csv(intData_Pres, file='dat/mcmc/integratedData_Pres.csv', row.names = FALSE)
+write.csv(naiveData_weighted, file='dat/mcmc/naiveData_weighted.csv', row.names = FALSE)
+write.csv(naiveData_unweighted, file='dat/mcmc/naiveData_unweighted.csv', row.names = FALSE)
+
+predictionDat = allData$all[,6:ncol(allData$all)]
+predictionDat$ddeg = allData$transformations$ddeg$forward(predictionDat$ddeg)
+predictionDat$sum_prcp = allData$transformations$sum_prcp$forward(predictionDat$sum_prcp)
+predictionDat$pToPET = allData$transformations$pToPET$forward(predictionDat$pToPET)
+predictionDat$fut_ddeg = allData$transformations$ddeg$forward(predictionDat$fut_ddeg)
+predictionDat$fut_sum_prcp = allData$transformations$sum_prcp$forward(predictionDat$fut_sum_prcp)
+predictionDat$fut_pToPET = allData$transformations$pToPET$forward(predictionDat$fut_pToPET)
+write.table(predictionDat, "dat/mcmc/predictionData.csv", sep=",", col.names=FALSE, row.names=FALSE)
+

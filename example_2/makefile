@@ -23,16 +23,7 @@ dat/mapleDat_processed.rds: r/1_prep_data.r dat/raw/AceSac.csv dat/raw/currentCl
 dat/raw/futureClim.rdata
 	Rscript r/1_prep_data.r -d dat/raw/AceSac.csv -o dat/mapleDat_processed.rds
 
-## step 2: run the naive GLM as an initial guess
-results/tmp/naive_glm.rds: r/2_setup_naive.r dat/mapleDat_processed.rds
-	Rscript r/2_setup_naive.r -i dat/mapleDat_processed.rds -o results/tmp/naive_glm.rds
-
-## step 3: prepare data for naive MCMC
-dat/mcmc/naivePriors.csv: r/3_naive_data.r dat/mapleDat_processed.rds \
-results/tmp/naive_glm.rds
-	Rscript r/3_naive_data.r -m results/tmp/naive_glm.rds -d dat/mapleDat_processed.rds \
-	-p dat/mcmc/naivePriors.csv --inits dat/mcmc/naiveInits.csv
-	
+dat/mcmc/naivePriors.csv: dat/mapleDat_processed.rds
 dat/mcmc/naiveInits.csv: dat/mcmc/naivePriors.csv
 dat/mcmc/integratedData_Fut.csv: dat/mcmc/naivePriors.csv
 dat/mcmc/integratedData_Pres.csv: dat/mcmc/naivePriors.csv
@@ -40,7 +31,8 @@ dat/mcmc/naiveData_weighted.csv: dat/mcmc/naivePriors.csv
 dat/mcmc/naiveData_unweighted.csv: dat/mcmc/naivePriors.csv
 dat/mcmc/predictionData.csv: dat/mcmc/naivePriors.csv
 
-## step 4: run naive model
+
+## step 2: run naive model
 results/mcmc/naivePosteriorRaw_unweighted.csv: bin/integrated_model \
 dat/mcmc/naiveData_unweighted.csv dat/mcmc/naiveInits.csv dat/mcmc/naivePriors.csv
 	bin/integrated_model -n -r 5000000 -d dat/mcmc/naiveData_unweighted.csv \
@@ -54,16 +46,16 @@ dat/mcmc/naiveData_weighted.csv dat/mcmc/naiveInits.csv dat/mcmc/naivePriors.csv
 	>results/mcmc/naivePosteriorRaw_weighted.csv
 
 
-## step 5: process the posterior distributions
-results/naiveModel_uw.rds: r/5_process_posterior.r results/tmp/naive_glm.rds \
+## step 3: process the posterior distributions
+results/naiveModel_uw.rds: r/3_process_posterior.r dat/mapleDat_processed.rds \
 results/mcmc/naivePosteriorRaw_unweighted.csv 
-	Rscript r/5_process_posterior.r -i results/mcmc/naivePosteriorRaw_unweighted.csv \
-	-g results/tmp/naive_glm.rds -o results/naiveModel_uw
+	Rscript r/3_process_posterior.r -i results/mcmc/naivePosteriorRaw_unweighted.csv \
+	-o results/naiveModel_uw
 
-results/naiveModel_w.rds: r/5_process_posterior.r results/tmp/naive_glm.rds \
+results/naiveModel_w.rds: r/3_process_posterior.r dat/mapleDat_processed.rds \
 results/mcmc/naivePosteriorRaw_weighted.csv 
-	Rscript r/5_process_posterior.r -i results/mcmc/naivePosteriorRaw_weighted.csv \
-	-g results/tmp/naive_glm.rds -o results/naiveModel_w
+	Rscript r/3_process_posterior.r -i results/mcmc/naivePosteriorRaw_weighted.csv \
+	-o results/naiveModel_w
 
 
 

@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 	// vector<double> tuning {0.150, 0.174, 0.0938, 0.0368, 0.377, 0.738, 0.155, 0.0994, 0.0192};
 
 	// unweighted naive model
-	vector<double> tuning {0.266, 0.451, 0.431, 0.225, 0.978, 2.8, 0.365, 0.457, 0.300};
+	vector<double> tuning {0.266, 2.967, 2.924, 1.482, 2.1, 7, 3.782, 3.98, 10.643};
 
 	Sampler sampler = Sampler(priors, priorDists, response, weights, predictors, inits, 
 			tuning, SIM_RESPONSE, VERBOSE_LEVEL);
