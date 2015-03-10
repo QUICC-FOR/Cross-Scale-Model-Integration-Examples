@@ -53,8 +53,10 @@ static bool SIM_RESPONSE = true;
 #include <iostream>
 #include <unistd.h> // for getopt
 #include <cstdlib>
+#include <string>
 
 using std::vector;
+using std::string;
 
 void parse_args(int argc, char **argv);
 void print_help();
@@ -64,11 +66,13 @@ int main(int argc, char **argv)
 	parse_args(argc, argv);
 	
 	CSV rawData;
+	vector<vector<double> > rawPriors;
 	vector<vector<double> > priors;
+	vector<string> priorDists;
 	vector<double> inits;
 	
 	try {
-		priors = CSV(PRIOR_FILE, 1).data();
+		rawPriors = CSV(PRIOR_FILE, 1).data();
 		rawData = CSV(DATA_FILE, 1);
 		inits = CSV(INIT_FILE, 1).columns(0);
 	}
@@ -77,22 +81,40 @@ int main(int argc, char **argv)
 		abort();
 	}
 	
+	// for the priors, we interpret a 1 in the distribution as cauchy, a 0 as gaussian
+	for(int i = 0; i < rawPriors.size(); i++)
+	{
+		priors.push_back(vector<double> {rawPriors[i][0], rawPriors[i][1]});
+		if(rawPriors[i][2] == 0)
+			priorDists.push_back("gaussian");
+		else if(rawPriors[i][2] == 1)
+			priorDists.push_back("cauchy");
+		else
+			priorDists.push_back("unknown");
+	}
+	
 	vector<vector<double> > predictors = rawData.columns(0,RESP_COL);
 	vector<double> response = rawData.columns(RESP_COL);
 	vector<int> weights;
 	for(const auto & w : rawData.columns(WEIGHT_COL))
 		weights.push_back(int(w));
 
-	// uncomment the first to use no a priori tuning values
-	// the second are values that are pretty close (developed from previous testing) for the FUTURE
-	// the third are the values for the present
-	// using them will allow for faster tuning
-//	vector<double> tuning (9,0);
-// 	vector<double> tuning {0.150, 0.210, 0.151, 0.049, 0.552, 0.610, 0.141, 0.213, 0.0310};
-	vector<double> tuning {0.150, 0.174, 0.0938, 0.0368, 0.377, 0.738, 0.155, 0.0994, 0.0192};
 
-	Sampler sampler = Sampler(priors, response, weights, predictors, inits, tuning, 
-			SIM_RESPONSE, VERBOSE_LEVEL);
+	// tuning parameters; using predefined values will allow for faster tuning
+	// no a priori tuning values
+	// vector<double> tuning (9,0);
+
+	// values that are pretty close (developed from previous testing) for the FUTURE
+	// vector<double> tuning {0.150, 0.210, 0.151, 0.049, 0.552, 0.610, 0.141, 0.213, 0.0310};
+
+	// values for the present
+	// vector<double> tuning {0.150, 0.174, 0.0938, 0.0368, 0.377, 0.738, 0.155, 0.0994, 0.0192};
+
+	// unweighted naive model
+	vector<double> tuning {0.266, 0.451, 0.431, 0.225, 0.978, 2.8, 0.365, 0.457, 0.300};
+
+	Sampler sampler = Sampler(priors, priorDists, response, weights, predictors, inits, 
+			tuning, SIM_RESPONSE, VERBOSE_LEVEL);
 	sampler.run(MCMC_REPS);
 
 	return 0;

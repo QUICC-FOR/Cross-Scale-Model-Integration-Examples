@@ -3,11 +3,11 @@ setwd("/Users/mtalluto/Dropbox/work/projects/Cross-Scale-Model-Integration-Examp
 
 load("results/integratedModel_Pres.rdata")
 load("results/integratedModel_Fut.rdata")
-load("dat/naive_model.rdata")
-	
+#load("dat/naive_model.rdata")
+naiveModel = readRDS("results/naiveModel.rds")	
 
 integratedStats_Pres = summary(integratedModel_Pres)$statistics
-naiveStats = summary(naiveModel$model)$coefficients
+naiveStats = summary(naiveModel)$statistics
 integratedStats_Fut = summary(integratedModel_Fut)$statistics
 
 # fix names and row orders
@@ -17,8 +17,8 @@ rownames(integratedStats_Pres) =
 		sub("b_([a-zA-Z_]+)([2-3])", "\\1\\^\\2", rownames(integratedStats_Pres))
 rownames(integratedStats_Pres) = 
 		sub("b_([a-zA-Z_]+)(1)", "\\1", rownames(integratedStats_Pres))
-naiveStats = naiveStats[rownames(integratedStats_Pres),,drop=FALSE]
-rownames(integratedStats_Fut) = rownames(integratedStats_Pres)
+# naiveStats = naiveStats[rownames(integratedStats_Pres),,drop=FALSE]
+rownames(integratedStats_Fut) = rownames(naiveStats) = rownames(integratedStats_Pres)
 
 
 # plot settings

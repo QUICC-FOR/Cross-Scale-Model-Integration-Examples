@@ -15,10 +15,93 @@ ELEtallutoSA2.pdf: tex/ELEtallutoSA2.tex
 	cd tex; pdflatex ELEtallutoSA2
 	mv tex/ELEtallutoSA2.pdf ELEtallutoSA2.pdf
 
-#### step 1: set up the models
-dat/naive_model.rdata: 1-setup_models.r dat/AceSac.csv dat/currentClim.rdata \
-dat/futureClim.rdata
-	Rscript 1-setup_models.r
+
+
+
+## step 1: prepare the data
+dat/mapleDat_processed.rds: r/1_prep_data.r dat/raw/AceSac.csv dat/raw/currentClim.rdata \
+dat/raw/futureClim.rdata
+	Rscript r/1_prep_data.r -d dat/raw/AceSac.csv -o dat/mapleDat_processed.rds
+
+## step 2: run the naive GLM as an initial guess
+results/tmp/naive_glm.rds: r/2_setup_naive.r dat/mapleDat_processed.rds
+	Rscript r/2_setup_naive.r -i dat/mapleDat_processed.rds -o results/tmp/naive_glm.rds
+
+## step 3: prepare data for naive MCMC
+dat/mcmc/naivePriors.csv: r/3_naive_data.r dat/mapleDat_processed.rds \
+results/tmp/naive_glm.rds
+	Rscript r/3_naive_data.r -m results/tmp/naive_glm.rds -d dat/mapleDat_processed.rds \
+	-p dat/mcmc/naivePriors.csv --inits dat/mcmc/naiveInits.csv
+	
+dat/mcmc/naiveInits.csv: dat/mcmc/naivePriors.csv
+dat/mcmc/integratedData_Fut.csv: dat/mcmc/naivePriors.csv
+dat/mcmc/integratedData_Pres.csv: dat/mcmc/naivePriors.csv
+dat/mcmc/naiveData_weighted.csv: dat/mcmc/naivePriors.csv
+dat/mcmc/naiveData_unweighted.csv: dat/mcmc/naivePriors.csv
+dat/mcmc/predictionData.csv: dat/mcmc/naivePriors.csv
+
+## step 4: run naive model
+results/mcmc/naivePosteriorRaw_unweighted.csv: bin/integrated_model \
+dat/mcmc/naiveData_unweighted.csv dat/mcmc/naiveInits.csv dat/mcmc/naivePriors.csv
+	bin/integrated_model -n -r 5000000 -d dat/mcmc/naiveData_unweighted.csv \
+	-i dat/mcmc/naiveInits.csv -p dat/mcmc/naivePriors.csv \
+	>results/mcmc/naivePosteriorRaw_unweighted.csv
+
+results/mcmc/naivePosteriorRaw_weighted.csv: bin/integrated_model \
+dat/mcmc/naiveData_weighted.csv dat/mcmc/naiveInits.csv dat/mcmc/naivePriors.csv
+	bin/integrated_model -n -r 5000000 -d dat/mcmc/naiveData_weighted.csv \
+	-i dat/mcmc/naiveInits.csv -p dat/mcmc/naivePriors.csv \
+	>results/mcmc/naivePosteriorRaw_weighted.csv
+
+
+## step 5: process the posterior distributions
+results/naiveModel_uw.rds: r/5_process_posterior.r results/tmp/naive_glm.rds \
+results/mcmc/naivePosteriorRaw_unweighted.csv 
+	Rscript r/5_process_posterior.r -i results/mcmc/naivePosteriorRaw_unweighted.csv \
+	-g results/tmp/naive_glm.rds -o results/naiveModel_uw
+
+results/naiveModel_w.rds: r/5_process_posterior.r results/tmp/naive_glm.rds \
+results/mcmc/naivePosteriorRaw_weighted.csv 
+	Rscript r/5_process_posterior.r -i results/mcmc/naivePosteriorRaw_weighted.csv \
+	-g results/tmp/naive_glm.rds -o results/naiveModel_w
+
+
+
+
+
+
+
+
+##### pre-cleanup scripts below
+
+
+
+
+
+
+#### step 6: run integrated model future
+
+
+
+#### step 7: compute statistics (mean and sd) on PREDICTIONS of the 3 models
+results/naiveStats.csv: bin/stats results/naiveModel.csv dat/predictionData.csv
+	./bin/stats -d results/naiveModel.csv >results/naiveStats.csv
+
+
+#### step 8: save the resulting stats as .rds files to facilitate quick loading later
+
+
+
+#### step 9: make figures
+
+
+
+
+
+## really old stuff that will definitely need updating 
+
+
+
 
 #### step 2a: run the future integrated model
 # requires the integrated_model binary, which must be built before running these steps
@@ -62,21 +145,17 @@ results/integratedModel_Fut.rdata dat/ne_110m_ocean/ne_110m_ocean.shp
 
 ## extra stuff just to make sure all dependencies are resolved	    
 ## these are created by the scripts above, so all are no-operation
-dat/integratedPriors.csv: dat/naive_model.rdata
+#dat/integratedPriors.csv: dat/naive_model.rdata
 
-dat/integratedInits.csv: dat/naive_model.rdata
+#dat/integratedInits.csv: dat/naive_model.rdata
 
-dat/integratedData_Pres.csv: dat/naive_model.rdata
+
+#results/integratedModel_Fut.rdata: results/integratedModel_Pres.rdata
+
+#results/integratedModel_Pres_Thinned.csv: results/integratedModel_Pres.rdata
+
+#results/integratedModel_Fut_Thinned.csv: results/integratedModel_Fut.rdata
 	
-dat/integratedData_Fut.csv: dat/naive_model.rdata
-
-results/integratedModel_Fut.rdata: results/integratedModel_Pres.rdata
-
-results/integratedModel_Pres_Thinned.csv: results/integratedModel_Pres.rdata
-
-results/integratedModel_Fut_Thinned.csv: results/integratedModel_Fut.rdata
-	
-dat/predictionData.csv: results/integratedModel_Pres.rdata
 
 ################
 #

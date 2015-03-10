@@ -39,7 +39,6 @@ Model integration example 2: sampler.cpp
 #include <cmath>
 #include <sstream>
 #include <iomanip>
-#include <string>
 #include <stdexcept>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -119,18 +118,20 @@ void Sampler::output()
 }
 
 
-Sampler::Sampler(vector<vector<double> > priors, vector<double> response,
+Sampler::Sampler(vector<vector<double> > priors, std::vector<std::string> priorDistros, 
+vector<double> response,
  vector<int> weights, vector<vector<double> > predictors, vector<double> initialValues, 
 vector<double> tuningParameters, bool simResponse, int verbose, bool autoAdapt) :
 
 // initializers for data/settings via the parameter list
-priors(priors), response(response), weight(weights), predictors(predictors), 
-tuningParameters(tuningParameters), verbose(verbose), simulateResponse(simResponse),
+priors(priors), priorDist(priorDistros), response(response), weight(weights), 
+predictors(predictors), tuningParameters(tuningParameters), verbose(verbose), 
+simulateResponse(simResponse),
 
 // magic numbers here are default values that have no support for initialization via parameters
 retainPreAdaptationSamples(true), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
 adaptationRate(1.1), maxAdaptation(100000), flushOnWrite(true), outputIncrement(50000),
-preventFittedZeroesOnes(true)
+allowFittedExtremes(false)
 {
 
 	// initialize the model state variables; these are only defined AFTER settings are initialized
@@ -219,8 +220,30 @@ int Sampler::choose_parameter(const long double proposal, const size_t i,
 	// returns 1 if proposal is accepted, 0 otherwise
 	vector<double> proposedParameters = currentState;
 	proposedParameters[i] = proposal;
-	long double acceptanceProb = exp( log_posterior_prob(Y, N, proposedParameters, i) - 
-			log_posterior_prob(Y, N, currentState, i));
+	long double proposalLL = log_posterior_prob(Y, N, proposedParameters, i);
+	long double currentLL = log_posterior_prob(Y, N, currentState, i);
+	long double acceptanceProb = exp(proposalLL - currentLL);
+
+	/*
+		reject any parameter combinations that cause overflow or underflow
+		this is perhaps excessively paranoid; it is possible that overflows could be
+		handled more elgantly. but this cruder solution will help protect against runaway
+		parameters
+		
+		temporarily disabled because we found some (hopefully) more appropriate solutions
+	*/
+// 	if(not std::isfinite(acceptanceProb))
+// 	{
+// 		std::cerr << "    proposalLL: " << proposalLL << "\n";
+// 		std::cerr << "    currentLL: " << currentLL << "\n";
+// 		std::cerr << "    acceptance probability: " << acceptanceProb << "\n";
+// 		acceptanceProb = 0;
+// 	}
+
+	// check for nan -- right now this is not being handled, but it should be
+	if(std::isnan(acceptanceProb))
+		throw std::runtime_error("NaN detected in likelihood");
+	
 	double testVal = gsl_rng_uniform(rng);
 	if(testVal < acceptanceProb) {
 		currentState[i] = proposal;
@@ -257,24 +280,53 @@ long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<int> 
 	for(int i = 0; i < nDataPoints; i++) {
 		long double p = inv_logit(model_linear_predictor(predictors[i], params));
 
-		/* in this case, it is ok if the model fits a 0 or 1; we still want to count those
-		    parameters. A zero or one is an overflow, not an error (the value isn't actually
-		    zero or one, it just exceeds the machine's floating point precision. So to avoid
-		    these values resuling in inf or nan (thus poisoning the whole likelihood), we
-		    set p to the closest representable number greater than 0 (for a fitted zero) or
-		    less than one (for a fitted one) */
-		if(preventFittedZeroesOnes && (p == 0.0 || p == 1.0))
+		/* 
+			if allowFittedExtremes is true, we detect overflow/underflow (due to inv logit
+			of very large numbers or divide by very large number) and use nextafter to
+			nudge those values back to the nearest representative value
+		*/
+		
+		if(allowFittedExtremes && (p == 0.0 || p == 1.0))
+		{
+			std::cerr << "Warning: over/underflow detected in logit function is being ignored due to allowFittedExtremes = true\n";
 			p = nextafter(p, abs(1.0 - p));
+		}
 			
 //		long double logl = Y[i] * log(p) + (1-Y[i])*log(1-p); // binomial density
-		long double logl = log(gsl_ran_binomial_pdf(Y[i], p, N[i]));
+		long double logl = std::log(gsl_ran_binomial_pdf(Y[i], p, N[i]));
 		
 		sumlogl += logl;
 	}
 	}
 	
-	sumlogl += log(gsl_ran_gaussian_pdf(params[i] - priors[i][0], priors[i][1]));	
+	// we only need to compute the prior prob of the parameter being evaluated
+	// this is because the acceptance prob is a ratio of the probabilities, so all
+	// other parameters, which are constant, will cancel
+	sumlogl += log_prior(params[i], i);
 	return sumlogl;
+}
+
+
+long double Sampler::log_prior(const long double & par, int index) const
+{
+	// currently only gaussian and cauchy priors are supported
+	// for cauchy, the SD is interpreted as the scale parameter
+	long double value;
+	if(priorDist[index] == "cauchy")
+	{
+		value = gsl_ran_cauchy_pdf(par - priors[index][0], priors[index][1]);
+	}
+	else if(priorDist[index] == "gaussian" or priorDist[index] == "normal")
+	{
+		value = gsl_ran_gaussian_pdf(par - priors[index][0], priors[index][1]);
+	}
+	else
+	{
+		std::string err = "Invalid distribution: " + priorDist[index] + " for parameter " + 
+				std::to_string(index);
+		throw std::runtime_error(err);
+	}
+	return std::log(value);
 }
 
 

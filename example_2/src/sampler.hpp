@@ -86,11 +86,14 @@ Model integration example 2: sampler.cpp
 
 #include <vector>
 #include <cstdlib>
+#include <string>
 
 class Sampler {
   public:
   	void run(const size_t n);
-	Sampler(std::vector<std::vector<double> > priors, std::vector<double> response,
+	Sampler(std::vector<std::vector<double> > priors, 
+			std::vector<std::string> priorDistros, 
+			std::vector<double> response,
 			std::vector<int> weights,
 			std::vector<std::vector<double> > predictors, 
 			std::vector<double> initialValues=std::vector<double>(), 
@@ -109,12 +112,14 @@ class Sampler {
 			const std::vector<int> &Y, const std::vector<int> &N);
 	long double log_posterior_prob(const std::vector<int> &Y, const std::vector<int> &N, 
 			const std::vector<double> &params, const size_t i) const;
+	long double log_prior(const long double & par, int index) const;
 	long double model_linear_predictor(const std::vector<double> &x, 
 			const std::vector<double> &params) const;
 	void output();
   
   	// data
 	std::vector<std::vector<double> > priors;
+	std::vector<std::string> priorDist;
 	std::vector<double> response;
 	std::vector<int> weight;	// size parameter of the binomial distribution
 	std::vector<std::vector<double> > predictors;
@@ -136,7 +141,7 @@ class Sampler {
 	size_t maxAdaptation;
 	bool flushOnWrite;
 	size_t outputIncrement;
-	bool preventFittedZeroesOnes;
+	bool allowFittedExtremes;
 	bool simulateResponse;
 };
 

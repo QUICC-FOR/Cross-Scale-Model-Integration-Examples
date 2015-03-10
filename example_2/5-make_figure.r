@@ -33,6 +33,9 @@ main = function()
 	require(fields)
 	require(rgdal)
 	require(coda)
+
+
+	naivePredictions = read.csv("results/naiveStats.csv")
 	
 	load("dat/naive_model.rdata")
 	intPredictions_Pres = read.csv("results/integratedStats_Pres.csv")
@@ -40,8 +43,8 @@ main = function()
 	load("results/integratedModel_Pres.rdata")
 	load("results/integratedModel_Fut.rdata")
 	
-	predictions_Pres = process_predictions(maple, naiveModel, intPredictions_Pres, integratedModel_Pres)
-	predictions_Fut = process_predictions(maple, naiveModel, intPredictions_Fut, integratedModel_Fut)
+	predictions_Pres = process_predictions(maple, naivePredictions, intPredictions_Pres, integratedModel_Pres)
+	predictions_Fut = process_predictions(maple, naivePredictions, intPredictions_Fut, integratedModel_Fut)
 
 	make_figure(predictions_Fut, pdfFileName = "ex2_Fut.pdf", predictionMeanCols = 
 			c(5,11), predictionSECols = c(6,12),  phenofit = "Phenofit_HadA2")
@@ -76,12 +79,12 @@ process_predictions = function(maple, naiveModel, intPredictions, intPosterior)
 		maple$transformations[[name]]$forward(futClimate[,name])}))
 
 	# produce predictions for the naive model
-	naivePresPred = predict(naiveModel$model, newdata=presClimate, type='response', se.fit=TRUE)
-	naiveFutPred = predict(naiveModel$model, newdata=futClimate, type='response', se.fit=TRUE)
+# 	naivePresPred = predict(naiveModel$model, newdata=presClimate, type='response', se.fit=TRUE)
+# 	naiveFutPred = predict(naiveModel$model, newdata=futClimate, type='response', se.fit=TRUE)
 
 	# wrap everything into a data frame
-	predictions = cbind(maple$all[,1:2], naivePresPred$fit, naivePresPred$se.fit, 
-		naiveFutPred$fit, naiveFutPred$se.fit, intPredictions)
+	predictions = cbind(maple$all[,1:2], naiveModel$pres_mean, naiveModel$pres_SE, 
+		naiveModel$fut_mean, naiveModel$fut_SE, intPredictions)
 	colnames(predictions) = c("long", "lat", 
 		'naivePresent', 'naivePresentSE', 'naiveFuture', 'naiveFutureSE',
 		'intPresent', 'intPresentSE', 'intPresentLower', 'intPresentUpper',
