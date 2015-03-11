@@ -83,12 +83,13 @@ rawData = within(rawData, {fut_pToPET = fut_an_prcp/fut_pet})
 
 # select only the predictors we're going to be using, along with squared and cubed terms
 rawData = rawData[,c(1:5, sapply(predictors, grep, colnames(rawData)))]
-predictors2 = predictors3 = rawData[,-(1:5)]
-predictors2 = predictors2^2
-predictors3 = predictors3^3
-colnames(predictors2) = paste(colnames(predictors2), "2", sep='')
-colnames(predictors3) = paste(colnames(predictors3), "3", sep='')
-rawData = cbind(rawData, predictors2, predictors3)
+# predictors2 = predictors3 = rawData[,-(1:5)]
+# predictors2 = predictors2^2
+# # predictors3 = predictors3^3
+# colnames(predictors2) = paste(colnames(predictors2), "2", sep='')
+# # colnames(predictors3) = paste(colnames(predictors3), "3", sep='')
+# # rawData = cbind(rawData, predictors2, predictors3)
+# rawData = cbind(rawData, predictors2)
 
 ## split data into calibration and validation sets
 ## we do this by drawing 2/3 of the presences for calibration, plus enough absences to keep
@@ -119,13 +120,17 @@ allData$valid = rbind(allData$valid, absences[-calibAb,][validAb,])
 # [0,1] interval to the open (0,1) interval to allow some variance
 prNames = colnames(allData$calib)[6:ncol(allData$calib)]
 prNames = prNames[substr(prNames,1,4) != "fut_"]
-allData$transformations = lapply(allData$calib[,prNames], rescale, return.functions=TRUE, stdev=0.5)
+allData$transformations = lapply(allData$calib[,prNames], rescale, return.functions=TRUE, stdev=1)
 for(nm in names(allData$transformations))
 {
 	nmfut = paste("fut_", nm, sep="")
 	allData$calib[,nm] = allData$transformations[[nm]]$forward(allData$calib[,nm])
 	allData$calib[,nmfut] = allData$transformations[[nm]]$forward(allData$calib[,nmfut])
+	allData$calib[,paste(nm,"2",sep="")] = allData$calib[,nm]^2
+	allData$calib[,paste(nmfut,"2",sep="")] = allData$calib[,nmfut]^2
+	
 }
+
 allData$calib$Phenofit_CRU = smithson_transform(allData$calib$Phenofit_CRU)
 allData$calib$Phenofit_HadA2 = smithson_transform(allData$calib$Phenofit_HadA2)
 
@@ -153,18 +158,22 @@ naivePriors = with(allData, data.frame(
 write.csv(naivePriors, file=argList$prior, row.names = FALSE)
 
 # use the prior distribution to draw random starts for the parameters
-naiveInits = sapply(1:nrow(naivePriors), function(i)
-{
-	with(naivePriors[i,],
-	{
-		func = ifelse(dist == 0, rnorm, rcauchy)
-		func(1, mean, sd)
-	})
-})
+# naiveInits = sapply(1:nrow(naivePriors), function(i)
+# {
+# 	with(naivePriors[i,],
+# 	{
+# 		func = ifelse(dist == 0, rnorm, rcauchy)
+# 		func(1, mean, sd)
+# 	})
+# })
+
+# new idea
+# draw starts from a fairly conservative gaussian
+naiveInits = rnorm(nrow(naivePriors), 0, 1)
 write.csv(naiveInits, file=argList$inits, row.names = FALSE)
 
 
-presPredictors = allData$variables[-1]
+presPredictors = allData$variables
 futPredictors = paste("fut_", presPredictors, sep="")
 
 

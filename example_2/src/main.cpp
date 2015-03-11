@@ -34,8 +34,8 @@ Model integration example 2: main.cpp
 #define VERBOSE_LEVEL 1
 
 // defines the column of the dataset that has the response variable
-#define RESP_COL 8
-#define WEIGHT_COL 9
+#define RESP_COL 6
+#define WEIGHT_COL 7
 
 // number of MCMC replicates
 static int MCMC_REPS = 1000000;
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 
 	// tuning parameters; using predefined values will allow for faster tuning
 	// no a priori tuning values
-	// vector<double> tuning (9,0);
+	// vector<double> tuning;
 
 	// values that are pretty close (developed from previous testing) for the FUTURE
 	// vector<double> tuning {0.150, 0.210, 0.151, 0.049, 0.552, 0.610, 0.141, 0.213, 0.0310};
@@ -110,9 +110,9 @@ int main(int argc, char **argv)
 	// values for the present
 	// vector<double> tuning {0.150, 0.174, 0.0938, 0.0368, 0.377, 0.738, 0.155, 0.0994, 0.0192};
 
-	// unweighted naive model
-	vector<double> tuning {0.266, 2.967, 2.924, 1.482, 2.1, 7, 3.782, 3.98, 10.643};
-
+	// weighted naive model
+	vector<double> tuning {0.169, 0.585, 0.931, 1.46, 0.504, 1.39, 3.91, 1.05, 1.4, 2.11};
+	
 	Sampler sampler = Sampler(priors, priorDists, response, weights, predictors, inits, 
 			tuning, SIM_RESPONSE, VERBOSE_LEVEL);
 	sampler.run(MCMC_REPS);

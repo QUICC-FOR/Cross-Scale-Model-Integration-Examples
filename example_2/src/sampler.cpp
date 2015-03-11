@@ -125,12 +125,12 @@ vector<double> tuningParameters, bool simResponse, int verbose, bool autoAdapt) 
 
 // initializers for data/settings via the parameter list
 priors(priors), priorDist(priorDistros), response(response), weight(weights), 
-predictors(predictors), tuningParameters(tuningParameters), verbose(verbose), 
+predictors(predictors), tuning(tuningParameters), verbose(verbose), 
 simulateResponse(simResponse),
 
 // magic numbers here are default values that have no support for initialization via parameters
 retainPreAdaptationSamples(true), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
-adaptationRate(1.1), maxAdaptation(100000), flushOnWrite(true), outputIncrement(50000),
+adaptationRate(1.5), maxAdaptation(100000), flushOnWrite(true), outputIncrement(50000),
 allowFittedExtremes(false)
 {
 
@@ -139,9 +139,11 @@ allowFittedExtremes(false)
 	nParams = priors.size();
 	size_t samplesTaken = 0;
 	set_initial_values(initialValues);	// this will update the model state as well
-	if(tuningParameters.size() == 0)
-		this->tuningParameters = vector<double> (nParams, 1);	// initialize all tuning parameters to 1 by default
-
+	
+	// fill in tuning parameters to make sure we have as many tuning values as parameters
+	while(tuning.size() < nParams)
+		tuning.push_back(1);
+		
 	if(autoAdapt)
 		auto_adapt();	
 }
@@ -157,22 +159,22 @@ void Sampler::auto_adapt()
 		adaptationSamplesTaken += autoAdaptIncrement;
 		adapted = true;
 		if(verbose)
-			cerr << "Adapting: acceptance rates: " << vec_to_str(acceptanceRates) << "; with tuning params: " << vec_to_str(tuningParameters) << '\n';
+			cerr << "Adapting: acceptance rates: " << vec_to_str(acceptanceRates) << "; with tuning params: " << vec_to_str(tuning) << '\n';
 		for(size_t k = 0; k < nParams; k++) {
 			if(acceptanceRates[k] < targetAcceptanceRateInterval[0]/2.0) {
-				tuningParameters[k] /= 2.0*adaptationRate;
+				tuning[k] /= 2.0*adaptationRate;
 				adapted = false;
 			}
 			else if(acceptanceRates[k] < targetAcceptanceRateInterval[0]){
-				tuningParameters[k] /= adaptationRate;
+				tuning[k] /= adaptationRate;
 				adapted = false;
 			}
 			else if(acceptanceRates[k] > targetAcceptanceRateInterval[1]*2.0){
-				tuningParameters[k] *= adaptationRate;
+				tuning[k] *= 2.0*adaptationRate;
 				adapted = false;
 			}
 			else if(acceptanceRates[k] > targetAcceptanceRateInterval[1]){
-				tuningParameters[k] *= adaptationRate;
+				tuning[k] *= adaptationRate;
 				adapted = false;
 			}
 		}
@@ -210,7 +212,7 @@ vector<int> Sampler::make_simulated_response() const
 
 double Sampler::propose_parameter(const size_t i) const
 {
-	return currentState[i] + gsl_ran_gaussian(rng, tuningParameters[i]);
+	return currentState[i] + gsl_ran_gaussian(rng, tuning[i]);
 }
 
 
@@ -240,17 +242,29 @@ int Sampler::choose_parameter(const long double proposal, const size_t i,
 // 		acceptanceProb = 0;
 // 	}
 
-	// check for nan -- right now this is not being handled, but it should be
+	// 	check for nan -- right now this is not being handled, but it should be
 	if(std::isnan(acceptanceProb))
-		throw std::runtime_error("NaN detected in likelihood");
-	
+		acceptanceProb = 0;
+//		throw std::runtime_error("NaN detected in likelihood");
+		
+	if(i == 1)
+	{
+		cerr << "proposal = " << proposedParameters[i] << "; posterior prob = " << proposalLL << "\n";
+		cerr << "current = " << currentState[i] << "; posterior prob = " << currentLL << "\n";
+		cerr << "acceptance prob = " << acceptanceProb;
+	}
+		
 	double testVal = gsl_rng_uniform(rng);
 	if(testVal < acceptanceProb) {
 		currentState[i] = proposal;
+		if(i == 1) cerr << "--accepted\n\n";
 		return 1;
 	}
 	else
+	{
+		if(i == 1) cerr << "--rejected\n\n";
 		return 0;
+	}
 }
 
 
@@ -269,7 +283,7 @@ long double Sampler::model_linear_predictor(const vector<double> &x, const vecto
 
 
 long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<int> &N, 
-		const vector<double> &params, const size_t i) const
+		const vector<double> &params, const size_t index) const
 {
 	long double sumlogl = 0;
 
@@ -293,7 +307,11 @@ long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<int> 
 		}
 			
 //		long double logl = Y[i] * log(p) + (1-Y[i])*log(1-p); // binomial density
-		long double logl = std::log(gsl_ran_binomial_pdf(Y[i], p, N[i]));
+		long double logl;
+		if(p == 0.0 || p == 1.0)	// penalize all fitted zeroes or ones
+			logl = 0;
+		else
+			logl = std::log(gsl_ran_binomial_pdf(Y[i], p, N[i]));
 		
 		sumlogl += logl;
 	}
@@ -302,7 +320,9 @@ long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<int> 
 	// we only need to compute the prior prob of the parameter being evaluated
 	// this is because the acceptance prob is a ratio of the probabilities, so all
 	// other parameters, which are constant, will cancel
-	sumlogl += log_prior(params[i], i);
+	sumlogl += log_prior(params[index], index);
+	if(index == 1) cerr << "prior = " << log_prior(params[index], index) << "\n";
+	
 	return sumlogl;
 }
 

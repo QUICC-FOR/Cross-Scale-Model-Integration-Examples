@@ -111,7 +111,7 @@ class Sampler {
 	int choose_parameter(const long double proposal, const size_t i, 
 			const std::vector<int> &Y, const std::vector<int> &N);
 	long double log_posterior_prob(const std::vector<int> &Y, const std::vector<int> &N, 
-			const std::vector<double> &params, const size_t i) const;
+			const std::vector<double> &params, const size_t index) const;
 	long double log_prior(const long double & par, int index) const;
 	long double model_linear_predictor(const std::vector<double> &x, 
 			const std::vector<double> &params) const;
@@ -127,7 +127,7 @@ class Sampler {
 	
 	// state variables
 	std::vector<double> currentState;
-	std::vector<double> tuningParameters;
+	std::vector<double> tuning;
 	size_t samplesTaken;
 	size_t nParams;
 	bool adapted;	
