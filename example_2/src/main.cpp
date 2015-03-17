@@ -104,15 +104,15 @@ int main(int argc, char **argv)
 	// no a priori tuning values
 	// vector<double> tuning;
 
-	// values that are pretty close (developed from previous testing) for the FUTURE
-	// vector<double> tuning {0.150, 0.210, 0.151, 0.049, 0.552, 0.610, 0.141, 0.213, 0.0310};
-
-	// values for the present
-	// vector<double> tuning {0.150, 0.174, 0.0938, 0.0368, 0.377, 0.738, 0.155, 0.0994, 0.0192};
-
-	// weighted naive model
-	vector<double> tuning {0.169, 0.585, 0.931, 1.46, 0.504, 1.39, 3.91, 1.05, 1.4, 2.11};
+	// naive model
+// 	vector<double> tuning {0.0845, 0.195, 0.207, 0.0721, 0.0747, 0.4, 1.3};
 	
+	// integrated model present
+//	vector<double> tuning {0.212, 0.26, 0.276, 0.296, 0.2994, 0.484, 1.3};
+
+	// integrated model future
+	vector<double> tuning {0.212, 0.26, 0.276, 0.296, 0.2994, 0.484, 1.3};
+
 	Sampler sampler = Sampler(priors, priorDists, response, weights, predictors, inits, 
 			tuning, SIM_RESPONSE, VERBOSE_LEVEL);
 	sampler.run(MCMC_REPS);

@@ -130,7 +130,7 @@ simulateResponse(simResponse),
 
 // magic numbers here are default values that have no support for initialization via parameters
 retainPreAdaptationSamples(true), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
-adaptationRate(1.5), maxAdaptation(100000), flushOnWrite(true), outputIncrement(50000),
+adaptationRate(1.1), maxAdaptation(100000), flushOnWrite(true), outputIncrement(50000),
 allowFittedExtremes(false)
 {
 
@@ -246,23 +246,14 @@ int Sampler::choose_parameter(const long double proposal, const size_t i,
 	if(std::isnan(acceptanceProb))
 		acceptanceProb = 0;
 //		throw std::runtime_error("NaN detected in likelihood");
-		
-	if(i == 1)
-	{
-		cerr << "proposal = " << proposedParameters[i] << "; posterior prob = " << proposalLL << "\n";
-		cerr << "current = " << currentState[i] << "; posterior prob = " << currentLL << "\n";
-		cerr << "acceptance prob = " << acceptanceProb;
-	}
-		
+				
 	double testVal = gsl_rng_uniform(rng);
 	if(testVal < acceptanceProb) {
 		currentState[i] = proposal;
-		if(i == 1) cerr << "--accepted\n\n";
 		return 1;
 	}
 	else
 	{
-		if(i == 1) cerr << "--rejected\n\n";
 		return 0;
 	}
 }
@@ -320,9 +311,7 @@ long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<int> 
 	// we only need to compute the prior prob of the parameter being evaluated
 	// this is because the acceptance prob is a ratio of the probabilities, so all
 	// other parameters, which are constant, will cancel
-	sumlogl += log_prior(params[index], index);
-	if(index == 1) cerr << "prior = " << log_prior(params[index], index) << "\n";
-	
+	sumlogl += log_prior(params[index], index);	
 	return sumlogl;
 }
 

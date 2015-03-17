@@ -35,7 +35,7 @@ parser = ArgumentParser()
 parser$add_argument("-t", "--thin", default=50, type="integer", help="thinning interval")
 parser$add_argument("-b", "--burnin", default=500000, type="integer", help="burn-in period")
 parser$add_argument("-i", "--infile", help="input file name - csv file from MCMC")
-parser$add_argument("-d", "--datafile", default = "dat/mapleDat_processed.rds", help="processed data in rds format")
+parser$add_argument("-d", "--datafile", default = "dat/mcmc/naiveData.rds", help="processed data in rds format")
 parser$add_argument("-o", "--outfile", help="output file name (without extension)")
 
 argList = parser$parse_args()
@@ -62,7 +62,8 @@ prep_posterior = function(samples, variables, burnin, thinInterval) {
 }
 
 dat = readRDS(argList$datafile)
-model = read.csv(argList$infile, header=FALSE, stringsAsFactors=FALSE)
-modelPosterior = prep_posterior(model, c("intercept", dat$variables), argList$burnin, argList$thin)
-saveRDS(modelPosterior, paste(argList$outfile, ".rds", sep=""))
-write.table(modelPosterior, paste(argList$outfile, ".csv", sep=""), sep=',', row.names=FALSE, col.names=FALSE)
+vars = c('intercept', colnames(dat)[1:(ncol(dat)-2)])
+rawPosterior = read.csv(argList$infile, header=FALSE, stringsAsFactors=FALSE)
+posterior = prep_posterior(rawPosterior, vars, argList$burnin, argList$thin)
+saveRDS(posterior, paste(argList$outfile, ".rds", sep=""))
+write.table(posterior, paste(argList$outfile, ".csv", sep=""), sep=',', row.names=FALSE, col.names=FALSE)

@@ -46,6 +46,8 @@ Model integration example 2: statistics.cpp
 #include <unistd.h> // for getopt
 #include <cstdlib>
 
+#define S_NUM_THREADS 8
+
 using std::vector;
 using std::cout;
 using std::cerr;
@@ -72,11 +74,12 @@ int main(int argc, char **argv)
 	// input data
 	vector<vector<double> > mcmcDat;
 	vector<double> ddeg, pToPET, sum_prcp, fut_ddeg, fut_pToPET, fut_sum_prcp;
+	vector<double> longitude, latitude;
 	
 	CSV rawData;
 	try {
 		mcmcDat = CSV(DATA_FILE, 0).data();
-		rawData = CSV("dat/predictionData.csv", 0);
+		rawData = CSV("dat/mcmc/predictionData.csv", 0);
 	}
 	catch (std::exception &e) {
 		std::cerr << e.what() << "\n";
@@ -84,11 +87,13 @@ int main(int argc, char **argv)
 	}
 	
 	ddeg = rawData.columns(0);
-	pToPET = rawData.columns(1);
+	pToPET = rawData.columns(5);
 	sum_prcp = rawData.columns(2);
-	fut_ddeg = rawData.columns(3);
+	fut_ddeg = rawData.columns(1);
 	fut_pToPET = rawData.columns(4);
-	fut_sum_prcp = rawData.columns(5);
+	fut_sum_prcp = rawData.columns(3);
+	longitude = rawData.columns(6);
+	latitude = rawData.columns(7);
 
 
 	const int nmcmc = mcmcDat.size();
@@ -98,17 +103,21 @@ int main(int argc, char **argv)
 	double * presPredictions = new double [nmcmc];
 	double * futPredictions = new double [nmcmc];
 	 
-	cout << "pres_mean,pres_SE,pres_lower,pres_upper,fut_mean,fut_SE,fut_lower,fut_upper\n";
+	cout << "pres_mean,pres_SE,pres_lower,pres_upper,fut_mean,fut_SE,fut_lower,fut_upper,long,lat\n";
 	
 	for(int datapoint = 0; datapoint < ndata; datapoint++) {
+		#pragma omp parallel num_threads(S_NUM_THREADS)
+		#pragma omp for
 		for(int mcmcrep = 0; mcmcrep < nmcmc; mcmcrep++) {
 			const vector<double> & b = mcmcDat.at(mcmcrep);
-			presPredictions[mcmcrep] = b[0] + b[1]*ddeg[datapoint] + b[2]*pow(ddeg[datapoint],2) + 
-				b[3]*pow(ddeg[datapoint],3) + b[4]*pToPET[datapoint] + b[5]*pow(pToPET[datapoint],2) + 
-				b[6]*sum_prcp[datapoint] + b[7]*pow(sum_prcp[datapoint],2) + b[8]*pow(sum_prcp[datapoint],3);
-			futPredictions[mcmcrep] = b[0] + b[1]*fut_ddeg[datapoint] + b[2]*pow(fut_ddeg[datapoint],2) + 
-				b[3]*pow(fut_ddeg[datapoint],3) + b[4]*fut_pToPET[datapoint] + b[5]*pow(fut_pToPET[datapoint],2) + 
-				b[6]*fut_sum_prcp[datapoint] + b[7]*pow(fut_sum_prcp[datapoint],2) + b[8]*pow(fut_sum_prcp[datapoint],3);
+			presPredictions[mcmcrep] = b[0] + b[1]*ddeg[datapoint] + 
+					b[2]*pow(ddeg[datapoint],2) + b[3]*sum_prcp[datapoint] + 
+					b[4]*pow(sum_prcp[datapoint],2) + b[5]*pToPET[datapoint] + 
+					b[6]*pow(pToPET[datapoint],2);
+			futPredictions[mcmcrep] = b[0] + b[1]*fut_ddeg[datapoint] + 
+					b[2]*pow(fut_ddeg[datapoint],2) + b[3]*fut_sum_prcp[datapoint] + 
+					b[4]*pow(fut_sum_prcp[datapoint],2) + b[5]*fut_pToPET[datapoint] + 
+					b[6]*pow(fut_pToPET[datapoint],2);
 			presPredictions[mcmcrep] = (double) inv_logit(presPredictions[mcmcrep]);
 			futPredictions[mcmcrep] = (double) inv_logit(futPredictions[mcmcrep]);
 		}
@@ -125,9 +134,10 @@ int main(int argc, char **argv)
 		lower[1] = gsl_stats_quantile_from_sorted_data(futPredictions,1, nmcmc, CI_LO);
 		double upper [2];
 		upper[0] = gsl_stats_quantile_from_sorted_data(presPredictions,1, nmcmc, CI_HI);
-		upper[0] = gsl_stats_quantile_from_sorted_data(futPredictions,1, nmcmc, CI_HI);
+		upper[1] = gsl_stats_quantile_from_sorted_data(futPredictions,1, nmcmc, CI_HI);
 		cout << mean[0] << ',' << sd[0] << ',' << lower[0] << ',' << upper[0] << ',';
-		cout << mean[1] << ',' << sd[1] << ',' << lower[1] << ',' << upper[1] << '\n';
+		cout << mean[1] << ',' << sd[1] << ',' << lower[1] << ',' << upper[1] << ',';
+		cout << longitude[datapoint] << ',' << latitude[datapoint] << '\n';
 	}
 	
 	return 0;
