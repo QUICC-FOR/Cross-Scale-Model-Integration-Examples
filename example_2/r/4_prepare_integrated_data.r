@@ -39,7 +39,7 @@ integratedPresData = with(rawData$calib, data.frame(
 	pToPET1 = pToPET,
 	pToPET2 = pToPET^2,
 	pres = Phenofit_CRU,
-	count = rep(1, length(Phenofit_CRU))))
+	count = ifelse(is.na(count), 1, count)))
 write.csv(integratedPresData, file="dat/mcmc/integratedPresData.csv", row.names = FALSE)
 
 integratedFutureData = with(rawData$calib, data.frame(
@@ -50,6 +50,6 @@ integratedFutureData = with(rawData$calib, data.frame(
 	pToPET1 = fut_pToPET,
 	pToPET2 = fut_pToPET^2,
 	pres = Phenofit_HadA2,
-	count = rep(1, length(Phenofit_HadA2))))
+	count = ifelse(is.na(count), 1, count)))
 write.csv(integratedFutureData, file="dat/mcmc/integratedFutureData.csv", row.names = FALSE)
 
