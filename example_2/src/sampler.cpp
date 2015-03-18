@@ -198,7 +198,7 @@ vector<int> Sampler::make_simulated_response() const
 	if(simulateResponse)
 	{
 		for(size_t i = 0; i < response.size(); i++) 
-			result.push_back(gsl_ran_bernoulli(rng, response[i]));
+			result.push_back(gsl_ran_binomial(rng, response[i], weight[i]));
 	}
 	else
 	{
