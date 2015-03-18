@@ -45,7 +45,7 @@ response_curve = function(v, v.name, lims, calib.range, draw.legend=FALSE)
 	polygon(c(v.unscaled, rev(v.unscaled)), c(quant[[2]][,1], rev(quant[[2]][,2])), col=pcol[2], border=bcol[2])
 	polygon(c(v.unscaled, rev(v.unscaled)), c(quant[[3]][,1], rev(quant[[3]][,2])), col=pcol[3], border=bcol[3])
 	if(draw.legend) 
-		legend(600, 0.97, bty='o', legend=c("Naive", "Integrated-Present", "Integrated-Future", "Naive Calibration Range"), fill=c(color, calCols[1]), bg="#FFFFFF")
+		legend(0.7, 0.97, bty='o', cex=0.7, legend=c("Naive", "Integrated-Present", "Integrated-Future", "Naive Calibration Range"), fill=c(color, calCols[1]), bg="#FFFFFF")
 }
 
 # figure out calibration ranges for the variables
@@ -55,10 +55,10 @@ pToPET.calib = with(rawDat$calib[complete.cases(rawDat$calib),], range(pToPET))
 
 pdf(file="ex2_response.pdf", w=7, h=2.75)
 par(mfrow=c(1,3), mar=c(4,4,0,0))
-sm = 30 # controls how smooth the curves are; higher is smoother but slower
-response_curve('ddeg', 'Degree days', c(0, 6000, sm), ddeg.calib, TRUE)
+sm = 100 # controls how smooth the curves are; higher is smoother but slower
+response_curve('ddeg', 'Degree days', c(0, 6000, sm), ddeg.calib, FALSE)
 response_curve('sum_prcp', 'Summer precipitation (mm)', c(100, 700, sm), sum_prcp.calib)
-response_curve('pToPET', 'p to PET ratio', c(0, 4, sm), pToPET.calib)
+response_curve('pToPET', 'p to PET ratio', c(0, 4, sm), pToPET.calib, TRUE)
 dev.off()
 
 

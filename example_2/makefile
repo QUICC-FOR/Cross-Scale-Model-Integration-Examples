@@ -95,6 +95,13 @@ dat/figure/acersacr dat/rawData.rds results/naiveStats.rds
 
 ex2_fut_map.pdf: ex2_pres_map.pdf
 
+
+
+## Validation
+auc.txt: r/validation.r dat/rawData.rds results/naivePosterior.rds results/integratedPresentPosterior.rds
+	Rscript r/validation.r
+
+
 ################
 #
 #  C++ build procedure for the integrated model
