@@ -84,7 +84,7 @@ namespace {
 
 void Sampler::run(const size_t n)
 {
-	size_t burninCompleted = 0; 
+	size_t burninCompleted = samplesTaken;	// we count adaptation as part of burnin 
 	size_t samplesCompleted = 0;
 	while(samplesCompleted < n) {
 		size_t samplesToTake;
