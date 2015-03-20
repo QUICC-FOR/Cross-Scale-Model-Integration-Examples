@@ -84,23 +84,36 @@ namespace {
 
 void Sampler::run(const size_t n)
 {
-	size_t numCompleted = 0;
-	while(numCompleted < n) {
-		size_t samplesToTake = ( (n - numCompleted < outputIncrement) ? (n - numCompleted) : outputIncrement);
+	size_t burninCompleted = 0; 
+	size_t samplesCompleted = 0;
+	while(samplesCompleted < n) {
+		size_t samplesToTake;
+		if(burninCompleted < burnin)
+			samplesToTake = ( (burnin - burninCompleted < outputIncrement) ? (burnin - burninCompleted) : outputIncrement);
+		else
+			samplesToTake = ( (n - samplesCompleted < outputIncrement) ? (n - samplesCompleted) : outputIncrement);
 		vector<vector<double> > newSamples;
 		newSamples.reserve(samplesToTake);
 		do_sample(newSamples, samplesToTake);
-		add_samples(newSamples);
-		numCompleted += samplesToTake;
-		
+
 		time_t rawtime;
 		time(&rawtime);
 		struct tm * timeinfo = localtime(&rawtime);
 		char fmtTime [20];
 		strftime(fmtTime, 20, "%F %T", timeinfo);
-		 
-		cerr << fmtTime << "   MCMC Iteration " << samplesTaken << "; current job completed " << numCompleted << " of " << n << '\n';
-		output();
+
+		if(burninCompleted < burnin)
+		{
+			burninCompleted += samplesToTake;
+			cerr << fmtTime << "   MCMC Iteration " << samplesTaken << "; burnin sample " << burninCompleted << " of " << burnin << '\n';
+		}
+		else
+		{
+			add_samples(newSamples);
+			samplesCompleted += samplesToTake;
+			cerr << fmtTime << "   MCMC Iteration " << samplesTaken << "; current job completed " << samplesCompleted << " of " << n << '\n';
+			output();
+		}		
 	}
 }
 
@@ -121,15 +134,16 @@ void Sampler::output()
 Sampler::Sampler(vector<vector<double> > priors, std::vector<std::string> priorDistros, 
 vector<double> response,
  vector<int> weights, vector<vector<double> > predictors, vector<double> initialValues, 
-vector<double> tuningParameters, bool simResponse, int verbose, bool autoAdapt) :
+vector<double> tuningParameters, size_t thin, size_t burn, bool simResponse, int verbose, 
+bool autoAdapt) :
 
 // initializers for data/settings via the parameter list
 priors(priors), priorDist(priorDistros), response(response), weight(weights), 
 predictors(predictors), tuning(tuningParameters), verbose(verbose), 
-simulateResponse(simResponse),
+simulateResponse(simResponse), thinning(thin), burnin(burn),
 
 // magic numbers here are default values that have no support for initialization via parameters
-retainPreAdaptationSamples(true), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
+retainPreAdaptationSamples(false), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
 adaptationRate(1.1), maxAdaptation(100000), flushOnWrite(true), outputIncrement(50000),
 allowFittedExtremes(false)
 {
@@ -181,8 +195,8 @@ void Sampler::auto_adapt()
 		if(retainPreAdaptationSamples)
 			add_samples(newSamples);
 	}
-	if(!retainPreAdaptationSamples)
-		posteriorSamples.push_back(currentState);	// save only the new "starting value" if we are not saving the adaptation samples
+// 	if(!retainPreAdaptationSamples)
+// 		posteriorSamples.push_back(currentState);	// save only the new "starting value" if we are not saving the adaptation samples
 
 	if(adapted)
 		cerr << "Adaptation completed successfully\n";
@@ -350,13 +364,15 @@ vector<double> Sampler::do_sample(vector<vector<double> > &dest, size_t n)
 	for(size_t i = 0; i < nParams; i++) indices[i] = i;
 	
 	for(size_t i = 0; i < n; i++) {
-		vector<int> Y = make_simulated_response();	// this does nothing if simulateResponse is False
+		for(size_t j = 0; j < thinning; j++) {
+			vector<int> Y = make_simulated_response();	// this does nothing if simulateResponse is False
 		
-		gsl_ran_shuffle(rng, indices, nParams, sizeof(size_t));
-		for(size_t j = 0; j < nParams; j++) {
-			size_t k = indices[j];
-			long double proposedVal = propose_parameter(k);
-			nAccepted[k] += choose_parameter(proposedVal, k, Y, weight);
+			gsl_ran_shuffle(rng, indices, nParams, sizeof(size_t));
+			for(size_t j = 0; j < nParams; j++) {
+				size_t k = indices[j];
+				long double proposedVal = propose_parameter(k);
+				nAccepted[k] += choose_parameter(proposedVal, k, Y, weight);
+			}
 		}
 		dest.push_back(currentState);
 		

@@ -97,7 +97,9 @@ class Sampler {
 			std::vector<int> weights,
 			std::vector<std::vector<double> > predictors, 
 			std::vector<double> initialValues=std::vector<double>(), 
-			std::vector<double> tuningParameters=std::vector<double>(), 
+			std::vector<double> tuningParameters=std::vector<double>(),
+			size_t thin = 0,
+			size_t burn = 0,
 			bool simResponse = false, int verbose=0, bool autoAdapt=true);
 
   private:
@@ -134,6 +136,8 @@ class Sampler {
 	
 	// settings
 	int verbose;
+	size_t thinning;
+	size_t burnin;
 	bool retainPreAdaptationSamples;
 	size_t autoAdaptIncrement;
 	double targetAcceptanceRateInterval [2];

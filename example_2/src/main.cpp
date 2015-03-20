@@ -39,6 +39,8 @@ Model integration example 2: main.cpp
 
 // number of MCMC replicates
 static int MCMC_REPS = 1000000;
+static int thinSize = 1;
+static int burninSize = 0;
 
 // input file names
 static const char * PRIOR_FILE = "dat/integratedPriors.csv";
@@ -114,7 +116,7 @@ int main(int argc, char **argv)
 	vector<double> tuning {0.212, 0.26, 0.276, 0.296, 0.2994, 0.484, 1.3};
 
 	Sampler sampler = Sampler(priors, priorDists, response, weights, predictors, inits, 
-			tuning, SIM_RESPONSE, VERBOSE_LEVEL);
+			tuning, thinSize, burninSize, SIM_RESPONSE, VERBOSE_LEVEL);
 	sampler.run(MCMC_REPS);
 
 	return 0;
@@ -123,7 +125,7 @@ int main(int argc, char **argv)
 void parse_args(int argc, char **argv)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hnd:p:i:r:")) != -1)
+	while((thearg = getopt(argc, argv, "hnd:p:i:r:t:b:")) != -1)
 	{
 		switch(thearg)
 		{
@@ -144,6 +146,10 @@ void parse_args(int argc, char **argv)
 			case 'r':
 				MCMC_REPS = atoi(optarg);
 				break;
+			case 't':
+				thinSize = atoi(optarg);
+			case 'b':
+				burninSize = atoi(optarg);
 			case '?':
 				print_help();
 		}
@@ -159,5 +165,7 @@ void print_help()
 	std::cerr << "    -i <filname>:   use the file <filename> for the initial parameter values\n";
 	std::cerr << "    -p <filname>:   use the file <filename> for the prior distribution data\n";
 	std::cerr << "    -r <integer>:   specify the number of mcmc replicates\n";
+	std::cerr << "    -t <integer>:   specify the thinning interval\n";
+	std::cerr << "    -b <integer>:   specify the burn-in sample size\n";	
 	exit(1);
 }
