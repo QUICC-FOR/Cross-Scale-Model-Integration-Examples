@@ -90,7 +90,8 @@ ex2_response.pdf: r/fig_response_curves.r results/integratedPresentPosterior.rds
 	Rscript r/fig_response_curves.r
 
 ex2_pres_map.pdf: r/fig_maps.r dat/figure/ne_50m_ocean dat/figure/ne_50m_lakes \
-dat/figure/acersacr dat/rawData.rds results/naiveStats.rds
+dat/figure/acersacr dat/rawData.rds results/naiveStats.rds results/intPresStats.rds \
+results/intFutStats.rds
 	Rscript r/fig_maps.r
 
 ex2_fut_map.pdf: ex2_pres_map.pdf
