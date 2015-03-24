@@ -43,40 +43,85 @@ main = function()
 	
 	maple = prep_data()
 	
-	# fit the naive model
+	# fit the naive model - this is an initial step for selecting predictors. we will
+	# later re-fit the model using MCMC
 	# we use the weighted presences as the response
 	# we have selected 3 of 6 predictors due to collinearities in the predictors
 	naiveModel = fit_naive_model(maple$calib, response=c(20,21), predictors=c(6,8,12))
 	
-	# finally, prep the information for the integrated model
-	priors = data.frame(mean=c(naiveModel$model$coefficients), sd = summary(
-		naiveModel$model)$coefficients[,2])
-	# put the priors into the same order as the other pieces
-	row.names(priors) = sapply(row.names(priors), function(x) {
-		naiveModel$variables$parameter[naiveModel$variables$coefName == x]})
-	priors = priors[c(1, order(row.names(priors)))[-(nrow(priors)+1)],]	
-
-	inits = data.frame(inits = unlist(naiveModel$starts()))
-
+	# finally, prep the information for the MCMC
+	naivePriors = with(naiveModel, data.frame(
+			mean = rep(0, nrow(variables)),
+			sd = rep(1e4, nrow(variables)),
+			row.names = variables$parameter))
+	naiveInits = data.frame(inits = unlist(naiveModel$starts()))
+			
 	# unfortunately, this part must be done manually, and must match the model description
 	# the order of the columns of intData must matchs the order in priors and inits
 	# finally, the response (phenofit predictions) must come last
-	intData = data.frame(
-		ddeg1 = maple$calib$fut_ddeg,
-		ddeg2 = maple$calib$fut_ddeg^2,
-		ddeg3 = maple$calib$fut_ddeg^3,
-		pToPET1 = maple$calib$fut_pToPET,
-		pToPET2 = maple$calib$fut_pToPET^2,
-		sum_prcp1 = maple$calib$fut_sum_prcp,
-		sum_prcp2 = maple$calib$fut_sum_prcp^2,
-		sum_prcp3 = maple$calib$fut_sum_prcp^3,
-		phenofit = maple$calib$Phenofit_HadA2
-	)
 
-	save(maple, naiveModel, file="dat/naive_model.rdata")
-	write.csv(priors, file='dat/integratedPriors.csv', row.names = FALSE)
-	write.csv(inits, file='dat/integratedInits.csv', row.names = FALSE)
-	write.csv(intData, file='dat/integratedData.csv', row.names = FALSE)
+naiveData_weighted = with(maple$calib, data.frame(
+		response = weightedPresence,
+		weights = weightedN))
+
+
+
+# get the predictors automagically based on what was selected in the GLM
+extract_predictors = function(varnames, powers, sourceData, future=FALSE)
+{
+	result = as.data.frame(matrix(nrow=nrow(sourceData), ncol=0))
+	for(i in 1:length(varnames))
+	{
+		dat = sourceData[,ifelse(future, paste('fut_', varnames[i], sep=''), varnames[i])]^i
+		result[,paste(varnames[i], ifelse(powers[i] == 1, "", powers[i]), sep="")] = dat
+	}
+	return(result)
+}
+
+presPredictors = extract_predictors(naiveModel$variables$varNames[-1], naiveModel$variables$powers[-1], maple$calib)
+futPredictors = extract_predictors(naiveModel$variables$varNames[-1], naiveModel$variables$powers[-1], maple$calib, TRUE)
+
+naiveData_weighted = naiveData_unweighted = intData_Pres = presPredictors
+intData_Fut = futPredictors
+naiveData_weighted$response = maple$calib$weightedPresence
+naiveData_unweighted$response = maple$calib$PresObs
+intData_Pres$response = maple$calib$Phenofit_CRU
+intData_Fut$response = maple$calib$Phenofit_HadA2
+naiveData_weighted$weights = maple$calib$weightedN
+naiveData_unweighted$weights = intData_Pres$weights = intData_Fut$weights = rep(1, nrow(maple$calib))
+
+
+	
+# 	priors = data.frame(mean=c(naiveModel$model$coefficients), sd = summary(
+# 		naiveModel$model)$coefficients[,2])
+# 	# put the priors into the same order as the other pieces
+# 	row.names(priors) = sapply(row.names(priors), function(x) {
+# 		naiveModel$variables$parameter[naiveModel$variables$coefName == x]})
+# 	priors = priors[c(1, order(row.names(priors)))[-(nrow(priors)+1)],]	
+# 
+# 	inits = data.frame(inits = unlist(naiveModel$starts()))
+
+
+	naiveModel_initial = naiveModel
+	save(maple, naiveModel_initial, file="dat/naive_model_initial.rdata")
+	write.csv(naivePriors, file='dat/naivePriors.csv', row.names = FALSE)
+	write.csv(naiveInits, file='dat/naiveInits.csv', row.names = FALSE)
+	write.csv(intData_Fut, file='dat/integratedData_Fut.csv', row.names = FALSE)
+	write.csv(intData_Pres, file='dat/integratedData_Pres.csv', row.names = FALSE)
+	write.csv(naiveData_weighted, file='dat/naiveData_weighted.csv', row.names = FALSE)
+	write.csv(naiveData_unweighted, file='dat/naiveData_unweighted.csv', row.names = FALSE)
+# 	write.csv(priors, file='dat/integratedPriors.csv', row.names = FALSE)
+# 	write.csv(inits, file='dat/integratedInits.csv', row.names = FALSE)
+
+	maplePredict = maple$all[,c(6,12,8,13,19,15)]
+	maplePredict$ddeg = maple$transformations$ddeg$forward(maplePredict$ddeg)
+	maplePredict$sum_prcp = maple$transformations$sum_prcp$forward(maplePredict$sum_prcp)
+	maplePredict$pToPET = maple$transformations$pToPET$forward(maplePredict$pToPET)
+	maplePredict$fut_ddeg = maple$transformations$ddeg$forward(maplePredict$fut_ddeg)
+	maplePredict$fut_sum_prcp = maple$transformations$sum_prcp$forward(maplePredict$fut_sum_prcp)
+	maplePredict$fut_pToPET = maple$transformations$pToPET$forward(maplePredict$fut_pToPET)
+	write.table(maplePredict, "dat/predictionData.csv", sep=",", col.names=FALSE, row.names=FALSE)
+
 }
 
 

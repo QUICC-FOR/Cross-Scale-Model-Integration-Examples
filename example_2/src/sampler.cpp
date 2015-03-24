@@ -39,7 +39,6 @@ Model integration example 2: sampler.cpp
 #include <cmath>
 #include <sstream>
 #include <iomanip>
-#include <string>
 #include <stdexcept>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -50,7 +49,7 @@ using std::cout;
 using std::cerr;
 
 // total number of threads to be used if the program is built for multi-threaded use
-#define S_NUM_THREADS 6
+#define S_NUM_THREADS 8
 
 
 namespace {
@@ -85,23 +84,36 @@ namespace {
 
 void Sampler::run(const size_t n)
 {
-	size_t numCompleted = 0;
-	while(numCompleted < n) {
-		size_t samplesToTake = ( (n - numCompleted < outputIncrement) ? (n - numCompleted) : outputIncrement);
+	size_t burninCompleted = samplesTaken;	// we count adaptation as part of burnin 
+	size_t samplesCompleted = 0;
+	while(samplesCompleted < n) {
+		size_t samplesToTake;
+		if(burninCompleted < burnin)
+			samplesToTake = ( (burnin - burninCompleted < outputIncrement) ? (burnin - burninCompleted) : outputIncrement);
+		else
+			samplesToTake = ( (n - samplesCompleted < outputIncrement) ? (n - samplesCompleted) : outputIncrement);
 		vector<vector<double> > newSamples;
 		newSamples.reserve(samplesToTake);
 		do_sample(newSamples, samplesToTake);
-		add_samples(newSamples);
-		numCompleted += samplesToTake;
-		
+
 		time_t rawtime;
 		time(&rawtime);
 		struct tm * timeinfo = localtime(&rawtime);
 		char fmtTime [20];
 		strftime(fmtTime, 20, "%F %T", timeinfo);
-		 
-		cerr << fmtTime << "   MCMC Iteration " << samplesTaken << "; current job completed " << numCompleted << " of " << n << '\n';
-		output();
+
+		if(burninCompleted < burnin)
+		{
+			burninCompleted += samplesToTake;
+			cerr << fmtTime << "   MCMC Iteration " << samplesTaken << "; burnin sample " << burninCompleted << " of " << burnin << '\n';
+		}
+		else
+		{
+			add_samples(newSamples);
+			samplesCompleted += samplesToTake;
+			cerr << fmtTime << "   MCMC Iteration " << samplesTaken << "; current job completed " << samplesCompleted << " of " << n << '\n';
+			output();
+		}		
 	}
 }
 
@@ -119,17 +131,21 @@ void Sampler::output()
 }
 
 
-Sampler::Sampler(vector<vector<double> > priors, vector<double> response,
-vector<vector<double> > predictors, vector<double> initialValues, vector<double> tuningParameters,
-int verbose, bool autoAdapt) :
+Sampler::Sampler(vector<vector<double> > priors, std::vector<std::string> priorDistros, 
+vector<double> response,
+ vector<int> weights, vector<vector<double> > predictors, vector<double> initialValues, 
+vector<double> tuningParameters, size_t thin, size_t burn, bool simResponse, int verbose, 
+bool autoAdapt) :
 
 // initializers for data/settings via the parameter list
-priors(priors), response(response), predictors(predictors), tuningParameters(tuningParameters), verbose(verbose),
+priors(priors), priorDist(priorDistros), response(response), weight(weights), 
+predictors(predictors), tuning(tuningParameters), verbose(verbose), 
+simulateResponse(simResponse), thinning(thin), burnin(burn),
 
 // magic numbers here are default values that have no support for initialization via parameters
-retainPreAdaptationSamples(true), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
-adaptationRate(1.1), maxAdaptation(100000), flushOnWrite(true), outputIncrement(50000),
-preventFittedZeroesOnes(true)
+retainPreAdaptationSamples(false), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
+adaptationRate(1.1), maxAdaptation(100000), flushOnWrite(true), outputIncrement(5000),
+allowFittedExtremes(false)
 {
 
 	// initialize the model state variables; these are only defined AFTER settings are initialized
@@ -137,9 +153,11 @@ preventFittedZeroesOnes(true)
 	nParams = priors.size();
 	size_t samplesTaken = 0;
 	set_initial_values(initialValues);	// this will update the model state as well
-	if(tuningParameters.size() == 0)
-		this->tuningParameters = vector<double> (nParams, 1);	// initialize all tuning parameters to 1 by default
-
+	
+	// fill in tuning parameters to make sure we have as many tuning values as parameters
+	while(tuning.size() < nParams)
+		tuning.push_back(1);
+		
 	if(autoAdapt)
 		auto_adapt();	
 }
@@ -151,34 +169,35 @@ void Sampler::auto_adapt()
 	std::cerr << "Starting automatic adaptation...\n";
 	while( !adapted && !(adaptationSamplesTaken >= maxAdaptation) ) {
 		vector<vector<double> > newSamples;
-		vector<double> acceptanceRates = do_sample(newSamples, autoAdaptIncrement);
+		int sampleSize = autoAdaptIncrement / thinning;	// do_sample wants the number of samples, not iterations
+		vector<double> acceptanceRates = do_sample(newSamples, sampleSize);
 		adaptationSamplesTaken += autoAdaptIncrement;
 		adapted = true;
 		if(verbose)
-			cerr << "Adapting: acceptance rates: " << vec_to_str(acceptanceRates) << "; with tuning params: " << vec_to_str(tuningParameters) << '\n';
+			cerr << "Adapting: acceptance rates: " << vec_to_str(acceptanceRates) << "; with tuning params: " << vec_to_str(tuning) << '\n';
 		for(size_t k = 0; k < nParams; k++) {
 			if(acceptanceRates[k] < targetAcceptanceRateInterval[0]/2.0) {
-				tuningParameters[k] /= 2.0*adaptationRate;
+				tuning[k] /= 2.0*adaptationRate;
 				adapted = false;
 			}
 			else if(acceptanceRates[k] < targetAcceptanceRateInterval[0]){
-				tuningParameters[k] /= adaptationRate;
+				tuning[k] /= adaptationRate;
 				adapted = false;
 			}
 			else if(acceptanceRates[k] > targetAcceptanceRateInterval[1]*2.0){
-				tuningParameters[k] *= adaptationRate;
+				tuning[k] *= 2.0*adaptationRate;
 				adapted = false;
 			}
 			else if(acceptanceRates[k] > targetAcceptanceRateInterval[1]){
-				tuningParameters[k] *= adaptationRate;
+				tuning[k] *= adaptationRate;
 				adapted = false;
 			}
 		}
 		if(retainPreAdaptationSamples)
 			add_samples(newSamples);
 	}
-	if(!retainPreAdaptationSamples)
-		posteriorSamples.push_back(currentState);	// save only the new "starting value" if we are not saving the adaptation samples
+// 	if(!retainPreAdaptationSamples)
+// 		posteriorSamples.push_back(currentState);	// save only the new "starting value" if we are not saving the adaptation samples
 
 	if(adapted)
 		cerr << "Adaptation completed successfully\n";
@@ -191,32 +210,71 @@ vector<int> Sampler::make_simulated_response() const
 {
 	vector<int> result;
 	result.reserve(response.size());
-	for(size_t i = 0; i < response.size(); i++) 
-		result.push_back(gsl_ran_bernoulli(rng, response[i]));
-
+	if(simulateResponse)
+	{
+		for(size_t i = 0; i < response.size(); i++) 
+		{
+			result.push_back(gsl_ran_binomial(rng, response[i], weight[i]));
+		}
+	}
+	else
+	{
+		for(size_t i = 0; i < response.size(); i++)
+		{
+			result.push_back(int(response[i]));
+		}
+	}
+	
 	return(result);
 }
 
 
 double Sampler::propose_parameter(const size_t i) const
 {
-	return currentState[i] + gsl_ran_gaussian(rng, tuningParameters[i]);
+	return currentState[i] + gsl_ran_gaussian(rng, tuning[i]);
 }
 
 
-int Sampler::choose_parameter(const long double proposal, const size_t i, const vector<int> &Y)
+int Sampler::choose_parameter(const long double proposal, const size_t i, 
+		const vector<int> &Y, const vector<int> &N)
 {
 	// returns 1 if proposal is accepted, 0 otherwise
 	vector<double> proposedParameters = currentState;
 	proposedParameters[i] = proposal;
-	long double acceptanceProb = exp( log_posterior_prob(Y, proposedParameters, i) - log_posterior_prob(Y, currentState, i));
+	long double proposalLL = log_posterior_prob(Y, N, proposedParameters, i);
+	long double currentLL = log_posterior_prob(Y, N, currentState, i);
+	long double acceptanceProb = exp(proposalLL - currentLL);
+
+	/*
+		reject any parameter combinations that cause overflow or underflow
+		this is perhaps excessively paranoid; it is possible that overflows could be
+		handled more elgantly. but this cruder solution will help protect against runaway
+		parameters
+		
+		temporarily disabled because we found some (hopefully) more appropriate solutions
+	*/
+// 	if(not std::isfinite(acceptanceProb))
+// 	{
+// 		std::cerr << "    proposalLL: " << proposalLL << "\n";
+// 		std::cerr << "    currentLL: " << currentLL << "\n";
+// 		std::cerr << "    acceptance probability: " << acceptanceProb << "\n";
+// 		acceptanceProb = 0;
+// 	}
+
+	// 	check for nan -- right now this is not being handled, but it should be
+	if(std::isnan(acceptanceProb))
+		acceptanceProb = 0;
+//		throw std::runtime_error("NaN detected in likelihood");
+				
 	double testVal = gsl_rng_uniform(rng);
 	if(testVal < acceptanceProb) {
 		currentState[i] = proposal;
 		return 1;
 	}
 	else
+	{
 		return 0;
+	}
 }
 
 
@@ -234,7 +292,8 @@ long double Sampler::model_linear_predictor(const vector<double> &x, const vecto
 
 
 
-long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<double> &params, const size_t i) const
+long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<int> &N, 
+		const vector<double> &params, const size_t index) const
 {
 	long double sumlogl = 0;
 
@@ -245,22 +304,57 @@ long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<doubl
 	for(int i = 0; i < nDataPoints; i++) {
 		long double p = inv_logit(model_linear_predictor(predictors[i], params));
 
-		/* in this case, it is ok if the model fits a 0 or 1; we still want to count those
-		    parameters. A zero or one is an overflow, not an error (the value isn't actually
-		    zero or one, it just exceeds the machine's floating point precision. So to avoid
-		    these values resuling in inf or nan (thus poisoning the whole likelihood), we
-		    set p to the closest representable number greater than 0 (for a fitted zero) or
-		    less than one (for a fitted one) */
-		if(preventFittedZeroesOnes && (p == 0.0 || p == 1.0))
+		/* 
+			if allowFittedExtremes is true, we detect overflow/underflow (due to inv logit
+			of very large numbers or divide by very large number) and use nextafter to
+			nudge those values back to the nearest representative value
+		*/
+		
+		if(allowFittedExtremes && (p == 0.0 || p == 1.0))
+		{
+			std::cerr << "Warning: over/underflow detected in logit function is being ignored due to allowFittedExtremes = true\n";
 			p = nextafter(p, abs(1.0 - p));
+		}
 			
-		long double logl = Y[i] * log(p) + (1-Y[i])*log(1-p); // binomial density
+//		long double logl = Y[i] * log(p) + (1-Y[i])*log(1-p); // binomial density
+		long double logl;
+// 		if(p == 0.0 || p == 1.0)	// penalize all fitted zeroes or ones
+// 			logl = 0;
+// 		else
+		logl = std::log(gsl_ran_binomial_pdf(Y[i], p, N[i]));
+		
 		sumlogl += logl;
 	}
 	}
 	
-	sumlogl += log(gsl_ran_gaussian_pdf(params[i] - priors[i][0], priors[i][1]));	
+	// we only need to compute the prior prob of the parameter being evaluated
+	// this is because the acceptance prob is a ratio of the probabilities, so all
+	// other parameters, which are constant, will cancel
+	sumlogl += log_prior(params[index], index);	
 	return sumlogl;
+}
+
+
+long double Sampler::log_prior(const long double & par, int index) const
+{
+	// currently only gaussian and cauchy priors are supported
+	// for cauchy, the SD is interpreted as the scale parameter
+	long double value;
+	if(priorDist[index] == "cauchy")
+	{
+		value = gsl_ran_cauchy_pdf(par - priors[index][0], priors[index][1]);
+	}
+	else if(priorDist[index] == "gaussian" or priorDist[index] == "normal")
+	{
+		value = gsl_ran_gaussian_pdf(par - priors[index][0], priors[index][1]);
+	}
+	else
+	{
+		std::string err = "Invalid distribution: " + priorDist[index] + " for parameter " + 
+				std::to_string(index);
+		throw std::runtime_error(err);
+	}
+	return std::log(value);
 }
 
 
@@ -275,12 +369,15 @@ vector<double> Sampler::do_sample(vector<vector<double> > &dest, size_t n)
 	for(size_t i = 0; i < nParams; i++) indices[i] = i;
 	
 	for(size_t i = 0; i < n; i++) {
-		vector<int> Y = make_simulated_response();
-		gsl_ran_shuffle(rng, indices, nParams, sizeof(size_t));
-		for(size_t j = 0; j < nParams; j++) {
-			size_t k = indices[j];
-			long double proposedVal = propose_parameter(k);
-			nAccepted[k] += choose_parameter(proposedVal, k, Y);
+		for(size_t j = 0; j < thinning; j++) {
+			vector<int> Y = make_simulated_response();	// this does nothing if simulateResponse is False
+		
+			gsl_ran_shuffle(rng, indices, nParams, sizeof(size_t));
+			for(size_t j = 0; j < nParams; j++) {
+				size_t k = indices[j];
+				long double proposedVal = propose_parameter(k);
+				nAccepted[k] += choose_parameter(proposedVal, k, Y, weight);
+			}
 		}
 		dest.push_back(currentState);
 		
@@ -292,7 +389,7 @@ vector<double> Sampler::do_sample(vector<vector<double> > &dest, size_t n)
 	
 	samplesTaken += n;
 	for(size_t i = 0; i < nParams; i++)
-		acceptanceRates[i] = double(nAccepted[i]) / n;
+		acceptanceRates[i] = double(nAccepted[i]) / (n*thinning);
 	
 	return acceptanceRates;
 } 

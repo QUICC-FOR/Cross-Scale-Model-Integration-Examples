@@ -86,13 +86,21 @@ Model integration example 2: sampler.cpp
 
 #include <vector>
 #include <cstdlib>
+#include <string>
 
 class Sampler {
   public:
   	void run(const size_t n);
-	Sampler(std::vector<std::vector<double> > priors, std::vector<double> response,
-		std::vector<std::vector<double> > predictors, std::vector<double> initialValues=std::vector<double>(), 
-		std::vector<double> tuningParameters=std::vector<double>(), int verbose=0, bool autoAdapt=true);
+	Sampler(std::vector<std::vector<double> > priors, 
+			std::vector<std::string> priorDistros, 
+			std::vector<double> response,
+			std::vector<int> weights,
+			std::vector<std::vector<double> > predictors, 
+			std::vector<double> initialValues=std::vector<double>(), 
+			std::vector<double> tuningParameters=std::vector<double>(),
+			size_t thin = 0,
+			size_t burn = 0,
+			bool simResponse = false, int verbose=0, bool autoAdapt=true);
 
   private:
   	// methods
@@ -102,26 +110,34 @@ class Sampler {
   	void add_samples(const std::vector<std::vector<double> > &samples);
 	std::vector<int> make_simulated_response() const;
 	double propose_parameter(const size_t i) const;
-	int choose_parameter(const long double proposal, const size_t i, const std::vector<int> &Y);
-	long double log_posterior_prob(const std::vector<int> &Y, const std::vector<double> &params, const size_t i) const;
-	long double model_linear_predictor(const std::vector<double> &x, const std::vector<double> &params) const;
+	int choose_parameter(const long double proposal, const size_t i, 
+			const std::vector<int> &Y, const std::vector<int> &N);
+	long double log_posterior_prob(const std::vector<int> &Y, const std::vector<int> &N, 
+			const std::vector<double> &params, const size_t index) const;
+	long double log_prior(const long double & par, int index) const;
+	long double model_linear_predictor(const std::vector<double> &x, 
+			const std::vector<double> &params) const;
 	void output();
   
   	// data
 	std::vector<std::vector<double> > priors;
+	std::vector<std::string> priorDist;
 	std::vector<double> response;
+	std::vector<int> weight;	// size parameter of the binomial distribution
 	std::vector<std::vector<double> > predictors;
 	std::vector<std::vector<double> > posteriorSamples;
 	
 	// state variables
 	std::vector<double> currentState;
-	std::vector<double> tuningParameters;
+	std::vector<double> tuning;
 	size_t samplesTaken;
 	size_t nParams;
 	bool adapted;	
 	
 	// settings
 	int verbose;
+	size_t thinning;
+	size_t burnin;
 	bool retainPreAdaptationSamples;
 	size_t autoAdaptIncrement;
 	double targetAcceptanceRateInterval [2];
@@ -129,7 +145,8 @@ class Sampler {
 	size_t maxAdaptation;
 	bool flushOnWrite;
 	size_t outputIncrement;
-	bool preventFittedZeroesOnes;
+	bool allowFittedExtremes;
+	bool simulateResponse;
 };
 
 #endif

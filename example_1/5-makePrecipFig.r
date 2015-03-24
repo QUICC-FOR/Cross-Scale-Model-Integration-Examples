@@ -32,7 +32,9 @@ precip_plot <- function(x, y, ylim=c(0,1), xlab="Precipitation", ylab=expression
 	# x is a vector giving the precip values for plotting
 	# y is a data frame from the predict_psi function, giving mean, SD and quantiles of the predictions for each x value
 	
-	plot(x, y$mean, type='l', ylim=ylim, xaxt='n', yaxt='n', xlab='', ylab='')
+	plot(0,0, type='n', xlim=c(-1, 1), ylim=ylim, xaxt='n', yaxt='n', xlab='', ylab='')
+	polygon(c(0,1,1,0), c(-0.01, -0.01, 1, 1), col="#77777744", border="#33333333")
+	lines(x, y$mean)
 	make_axes(xlab=xlab, ylab=ylab, main=main)
 	lines(x, y$lower, lty=2)
 	lines(x, y$upper, lty=2) 
@@ -58,7 +60,7 @@ yl <- c(
 yl <- round(yl,2)
 par(xpd=TRUE)
 with(m1Predictions, precip_plot(precipDomain$precip, precipPredict, ylim=yl, main='(a) Naive meta-model'))
-lines(c(0,1), rep(-0.01,2), col='blue', lwd=1.5)
+# lines(c(0,1), rep(-0.01,2), col='blue', lwd=1.5)
 # lines(c(0,0), c(0.98, 1), col='blue')
 # lines(c(1,1), c(0.98, 1), col='blue')
 

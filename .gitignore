@@ -5,15 +5,19 @@
 *.aux
 *.log
 
+# R junk
+*.history
+
 # jags model files are generated on-the-fly by R scripts
 *.jags
 
 # data files don't need to be tracked unless explicitely included
 *.rdata
+*.rds
 *.csv
-!example_2/dat/AceSac.csv
-!example_2/dat/currentClim.rdata
-!example_2/dat/futureClim.rdata
+!example_2/dat/raw/AceSac.csv
+!example_2/dat/raw/currentClim.rdata
+!example_2/dat/raw/futureClim.rdata
 
 # binaries
 example_2/bin/*
