@@ -24,9 +24,17 @@ load('dat/raw/futureClim.rdata')
 presDat = readRDS("dat/raw/AceSac_pres.rds")
 phenDat = read.csv("dat/raw/AceSac.csv")
 
-climBaseCols = c("long", "lat", "Phenofit_CRU", "Phenofit_HadA2")
-climPredictorCols = c("ddeg", "sum_prcp", "pToPET")
+climBaseCols = c("long", "lat", "PresObs", "Phenofit_CRU", "Phenofit_HadA2")
+climPredictorCols = c("ddeg", "an_prcp", "pToPET")
 climCols= c(climBaseCols, climPredictorCols)
+
+# subset the data using lat/long
+# we don't need to fit the model for Alaska and Greenland, for example
+xlims = c(-130,-50)
+ylims = c(20,65)
+climInd = with(current_clim, which(X >= xlims[1] & X <= xlims[2] & Y >= ylims[1] & Y <= ylims[2]))
+current_clim = current_clim[climInd,]
+future_clim = future_clim[climInd,]
 
 coordinates(phenDat) = c('long', 'lat')
 coordinates(current_clim) = c("X", "Y")
@@ -78,28 +86,27 @@ gridded(climPixels) = TRUE
 climRas = raster(climPixels, layer=which(names(climPixels) == 'grID'))
 
 # now aggregate the presence-absence data within each grid cell at the climate data scale
-# need to do it once for each of calibration and validation sets
 coordinates(presDat) = c('lon', 'lat')
 presDat$grID = extract(climRas, presDat)
+prSum = aggregate(presDat$presence, by=list(presDat$grID), FUN=sum)
+colnames(prSum) = c("grID", "pres")
+prCount = as.data.frame(table(presDat$grID))
+colnames(prCount) = c("grID", "count")
+presence = merge(prSum, prCount, by="grID")
+baseData = merge(climDat, presence, by="grID", all.x=TRUE)
+baseData = within(baseData, 
+{
+	countAug = 1 + ifelse(is.na(count), 0, count)
+	presAug = PresObs + ifelse(is.na(pres), 0, pres)
+})
 
 set.seed(626786234)
-validRows = sample(nrow(presDat), as.integer(1/3 * nrow(presDat)))
-presList = list(
-	valid = presDat[validRows,],
-	calib = presDat[-validRows,],
-	all = presDat)
-	
-prSum = lapply(presList, function(x) {
-	res = aggregate(x$presence, by=list(x$grID), FUN=sum)
-	colnames(res) = c("grID", "pres")
-	res})
-prCount = lapply(presList, function(x) {
-	res = as.data.frame(table(x$grID))
-	colnames(res) = c("grID", "count")
-	res})
-presence = lapply(1:length(prSum), function(i) merge(prSum[[i]], prCount[[i]], by="grID"))
-baseData = lapply(presence, function(x) merge(climDat, x, by="grID", all.x=TRUE))
-names(baseData) = names(presList)
+validRows = sample(nrow(baseData), as.integer(1/3 * nrow(baseData)))
+baseData = list(
+	valid = baseData[validRows,],
+	calib = baseData[-validRows,],
+	all = baseData)
+
 saveRDS(baseData, file="dat/rawData.rds")
 
 
@@ -108,8 +115,9 @@ saveRDS(baseData, file="dat/rawData.rds")
 naiveDat = with(baseData$calib[complete.cases(baseData$calib),], data.frame(
 	ddeg1 = ddeg,
 	ddeg2 = ddeg^2,
-	sum_prcp1 = sum_prcp,
-	sum_prcp2 = sum_prcp^2,
+	ddeg3 = ddeg^3,
+	an_prcp1 = an_prcp,
+	an_prcp2 = an_prcp^2,
 	pToPET1 = pToPET,
 	pToPET2 = pToPET^2,
 	pres = pres,
@@ -134,5 +142,5 @@ write.csv(naiveInits, file='dat/mcmc/naiveInits.csv', row.names = FALSE)
 
 # prepare prediction data
 predictionDat = baseData$all[,unlist(sapply(c(climPredictorCols, "long", "lat"), function(v) grep(v, colnames(baseData$all))))]
-write.table(predictionDat, "dat/mcmc/predictionData.csv", sep=",", col.names=FALSE, row.names=FALSE)
+saveRDS(predictionDat, file="dat/predictionData.rds")
 

@@ -144,7 +144,7 @@ simulateResponse(simResponse), thinning(thin), burnin(burn),
 
 // magic numbers here are default values that have no support for initialization via parameters
 retainPreAdaptationSamples(false), autoAdaptIncrement(5000), targetAcceptanceRateInterval {0.27, 0.34},
-adaptationRate(1.1), maxAdaptation(100000), flushOnWrite(true), outputIncrement(50000),
+adaptationRate(1.1), maxAdaptation(100000), flushOnWrite(true), outputIncrement(5000),
 allowFittedExtremes(false)
 {
 
@@ -169,7 +169,8 @@ void Sampler::auto_adapt()
 	std::cerr << "Starting automatic adaptation...\n";
 	while( !adapted && !(adaptationSamplesTaken >= maxAdaptation) ) {
 		vector<vector<double> > newSamples;
-		vector<double> acceptanceRates = do_sample(newSamples, autoAdaptIncrement);
+		int sampleSize = autoAdaptIncrement / thinning;	// do_sample wants the number of samples, not iterations
+		vector<double> acceptanceRates = do_sample(newSamples, sampleSize);
 		adaptationSamplesTaken += autoAdaptIncrement;
 		adapted = true;
 		if(verbose)
@@ -212,12 +213,16 @@ vector<int> Sampler::make_simulated_response() const
 	if(simulateResponse)
 	{
 		for(size_t i = 0; i < response.size(); i++) 
+		{
 			result.push_back(gsl_ran_binomial(rng, response[i], weight[i]));
+		}
 	}
 	else
 	{
-		for(size_t i = 0; i < response.size(); i++) 
+		for(size_t i = 0; i < response.size(); i++)
+		{
 			result.push_back(int(response[i]));
+		}
 	}
 	
 	return(result);
@@ -313,10 +318,10 @@ long double Sampler::log_posterior_prob(const vector<int> &Y, const vector<int> 
 			
 //		long double logl = Y[i] * log(p) + (1-Y[i])*log(1-p); // binomial density
 		long double logl;
-		if(p == 0.0 || p == 1.0)	// penalize all fitted zeroes or ones
-			logl = 0;
-		else
-			logl = std::log(gsl_ran_binomial_pdf(Y[i], p, N[i]));
+// 		if(p == 0.0 || p == 1.0)	// penalize all fitted zeroes or ones
+// 			logl = 0;
+// 		else
+		logl = std::log(gsl_ran_binomial_pdf(Y[i], p, N[i]));
 		
 		sumlogl += logl;
 	}
@@ -384,7 +389,7 @@ vector<double> Sampler::do_sample(vector<vector<double> > &dest, size_t n)
 	
 	samplesTaken += n;
 	for(size_t i = 0; i < nParams; i++)
-		acceptanceRates[i] = double(nAccepted[i]) / n;
+		acceptanceRates[i] = double(nAccepted[i]) / (n*thinning);
 	
 	return acceptanceRates;
 } 

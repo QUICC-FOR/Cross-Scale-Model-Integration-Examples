@@ -34,8 +34,10 @@ Model integration example 2: main.cpp
 #define VERBOSE_LEVEL 1
 
 // defines the column of the dataset that has the response variable
-#define RESP_COL 6
-#define WEIGHT_COL 7
+// #define RESP_COL 6
+// #define WEIGHT_COL 7		// sqaure only (non-cubic) model
+#define RESP_COL 7
+#define WEIGHT_COL 8
 
 // number of MCMC replicates
 static int MCMC_REPS = 1000000;
@@ -107,13 +109,13 @@ int main(int argc, char **argv)
 	// vector<double> tuning;
 
 	// naive model
-// 	vector<double> tuning {0.0845, 0.195, 0.207, 0.0721, 0.0747, 0.4, 1.3};
+//	vector<double> tuning {0.0876, 0.215, 0.276, 0.275, 0.0918, 0.0697, 0.0939, 0.103};
 	
 	// integrated model present
-//	vector<double> tuning {0.212, 0.26, 0.276, 0.296, 0.2994, 0.484, 1.3};
+	vector<double> tuning {0.0796, 0.178, 0.189, 0.103, 0.0835, 0.0634, 0.0939, 0.064};
 
 	// integrated model future
-	vector<double> tuning {0.212, 0.26, 0.276, 0.296, 0.2994, 0.484, 1.3};
+//	vector<double> tuning {0.212, 0.26, 0.276, 0.5, 0.296, 0.2994, 0.5, 0.484, 1.3, 0.5};
 
 	Sampler sampler = Sampler(priors, priorDists, response, weights, predictors, inits, 
 			tuning, thinSize, burninSize, SIM_RESPONSE, VERBOSE_LEVEL);
@@ -148,8 +150,10 @@ void parse_args(int argc, char **argv)
 				break;
 			case 't':
 				thinSize = atoi(optarg);
+				break;
 			case 'b':
 				burninSize = atoi(optarg);
+				break;
 			case '?':
 				print_help();
 		}

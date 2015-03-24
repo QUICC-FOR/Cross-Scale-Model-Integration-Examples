@@ -1,11 +1,9 @@
 library(coda)
-intPres = readRDS("results/integratedPresentPosterior.rds")
-intFut = readRDS("results/integratedFuturePosterior.rds")
-naive = readRDS("results/naivePosterior.rds")
+load("results/posteriors.rdata")
 
-intPreStats = summary(intPres)
-naiveStats = summary(naive)
-intFutStats = summary(intFut)
+intPreStats = summary(intPresPosterior)
+naiveStats = summary(naivePosterior)
+intFutStats = summary(intFutPosterior)
 
 parameters = list(naive = naiveStats$statistics[,1], intPre = intPreStats$statistics[,1],
 		intFut = intFutStats$statistics[,1])
@@ -17,26 +15,27 @@ upper = list(naive = naiveStats$quantiles[,5], intPre = intPreStats$quantiles[,5
 
 # plot settings
 pdfFileName = "ex2_params.pdf"
-pdfWidth = 5.5
-pdfHeight = 5.5
+pdfWidth = 3.5
+pdfHeight = 3.5
 yle = 2.5
 allVals = rbind(naiveStats, intPreStats, intFutStats)
 ylims = c(-10,10)
 pch=21
 cols=c('#66c2a5', '#fc8d62', '#8da0cb', 'black', 'black', 'black')
 outline="#888888"
-oset = 0.2
-xx = 1:nrow(naiveStats$statistics)
+oset = 0.5
+xx = seq(1,nrow(naiveStats$statistics)*3,3)
 textYPos = apply(cbind(upper$naive, upper$intPre, upper$intFut), 1, max) + 0.2
 bty='n'
-texcex = 0.6
-margin = c(0,3,0,0) + 0.5
-cex.axis = 0.8
-cex.lab = 0.8
-mgp = c(2,0.5,0)
+texcex = 0.5
+margin = c(0,1.75,0,0) + 0.5
+cex.axis = 0.6
+cex.lab = 0.7
+mgp = c(1.25,0.5,0)
 tcl=-0.3
-cex.legend=0.8
+cex.legend=0.55
 cex=0.9
+lwd.axis=0.75
 
 labs = rownames(naiveStats$statistics)
 ones = grep("1$", labs)
@@ -48,10 +47,10 @@ labs[twos] = paste(substr(labs[twos], 1, nchar(labs[twos])-1), "^", substr(labs[
 pdf(file=pdfFileName, width=pdfWidth,height=pdfHeight)
 
 par(mar=margin, mgp=mgp, tcl=tcl)
-plot(0,0, ylim=ylims, pch=pch, xlim=c(min(xx)-oset, max(xx)+oset), 
-		bty='n', ylab="Parameter value", xaxt='n', xlab='', cex.axis=cex.axis, 
-		cex.lab = cex.lab)
+plot(0,0, ylim=ylims, type='n', pch=pch, xlim=c(min(xx)-oset, max(xx)+oset), 
+		bty='n', ylab="Parameter value", xaxt='n', yaxt='n', xlab='', cex.lab = cex.lab)
 axis(side=1, pos=0, labels=F, lwd.ticks=0, lty=2, at=c(min(xx), max(xx)+1), col='grey', outer=T)
+axis(side=2, labels=T, lwd.ticks=lwd.axis, lwd=lwd.axis, cex.axis=cex.axis)
 points(xx-oset, parameters$naive, pch=pch, bg=cols[1], col=outline, cex=cex)
 points(xx, parameters$intPre, pch=pch, bg=cols[2], col=outline, cex=cex)
 points(xx+oset, parameters$intFut, pch=pch, bg=cols[3], col=outline, cex=cex)
@@ -59,6 +58,6 @@ segments(xx-oset, lower$naive, xx-oset, upper$naive, col=cols[4])
 segments(xx, lower$intPre, xx, upper$intPre, col=cols[5])
 segments(xx+oset, lower$intFut, xx+oset, upper$intFut, col=cols[6])
 text(xx, textYPos, parse(text=labs), pos=3, cex=texcex)
-legend(max(xx)-2, 0.9*ylims[2], legend=c("Naive", "Integrated (Present)", 
-		"Integrated (Future)"), pch=pch, pt.bg=cols[1:3], col=outline, cex=cex.legend)
+legend(max(xx)-9, -7, legend=c("Naive", "Integrated (Present)", "Integrated (Future)"),
+		bty='o', pch=pch, pt.bg=cols[1:3], col=outline, cex=cex.legend, box.lwd=lwd.axis)
 dev.off()

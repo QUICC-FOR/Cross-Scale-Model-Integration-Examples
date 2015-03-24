@@ -29,11 +29,8 @@ library(coda)
 in.range = function(x, lims) x >= lims[1] & x <= lims[2]
 
 rawDat = readRDS("dat/rawData.rds")
-predictionDat = read.csv("dat/mcmc/predictionData.csv", header=FALSE)
-naiveStats = readRDS("results/naiveStats.rds")
-intFutStats = readRDS("results/intFutStats.rds")
-intPresStats = readRDS("results/intPresStats.rds")
-
+load("results/posteriors.rdata")
+useR = TRUE
 
 ocean = readOGR(dsn="dat/figure/ne_50m_ocean", layer="ne_50m_ocean")
 lakes = readOGR(dsn="dat/figure/ne_50m_lakes", layer="ne_50m_lakes")
@@ -45,12 +42,13 @@ grLakes = lakes[as.integer(sapply(lkNames, grep, lakes$name)),]
 
 meanColors = colorRampPalette(c("#ffffff", "#bdc9e1", "#045a8d", "#33338d", "#cc99ff"), interpolate='spline', bias=1, space="rgb")(200)
 errorColors = colorRampPalette(c("#ffffff", "#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"), interpolate='spline', space="rgb", bias=1.4)(200)
+errDiffCols = colorRampPalette(c("blue", "white", "orange"), interpolate='spline', space="rgb", bias=1)(200)
 meanZlims = c(0,1)
 rangeBorder = '#FF3333bb'
 rangeLwd = 1.2
 rangeCol = "#66666600"
 xlim=c(-105, -55)
-ylim=c(27,65)
+ylim=c(30,65)
 titleCEX = 0.7
 
 plotbg = function(txt="")
@@ -61,106 +59,101 @@ plotbg = function(txt="")
 	mtext(txt, adj=0, cex = titleCEX)
 }
 
-pdfWidth = 7.5
-pdfHeight = 5.25
+pdfWidth = 6.5
+pdfHeight = 2.75
 pdf(file = "ex2_pres_map.pdf", height=pdfHeight, width=pdfWidth)
 plotLayout = matrix(c(
-	1,1,2,3,
-	6,7,4,5),
+	1,2,3,4,
+	5,5,6,6),
   byrow=T, nrow=2)
-layoutWidths = c(0.5,0.5,1,1)
-layout(plotLayout, widths=layoutWidths)
+layoutHeights = c(1,0.3)
+layout(plotLayout, heights=layoutHeights)
 mapMar = c(1,1,1,1)
 par(mar=mapMar)
-scaleMar = c(1.75,3.75,1.75,3.75)
+scaleMar = c(2.25,0.75,1.75,1.75)
 
-statsSub = which(in.range(naiveStats$long, xlim) & in.range(naiveStats$lat, ylim))
+statsSub = which(in.range(naivePredictions$long, xlim) & in.range(naivePredictions$lat, ylim))
 errorZlims = 
 {
-	vals = c(naiveStats[statsSub, 'pres_SE'], intPresStats[statsSub, 'pres_SE'])
+	vals = c(naivePredictions[statsSub, 'presSE'], intPresPredictions[statsSub, 'presSE'])
 	c(min(vals), max(vals))
 }	
 meanTitles = c("A. Phenofit", "B. Naive", "C. Integrated-Present")
-errorTitles = c("D. Standard error (Naive)", "E. Standard error (Integrated-Present)")
-
+errorTitles = c("D. Uncertainty")
+meanScaleTitle = 'Probability of presence'
+errScaleTitle = expression('Integrated SE - Naive SE')
 quilt.plot(rawDat$all$long, rawDat$all$lat, rawDat$all$Phenofit_CRU, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
 plotbg(meanTitles[1])
 
-quilt.plot(naiveStats$long, naiveStats$lat, naiveStats$pres_mean, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+quilt.plot(naivePredictions$long, naivePredictions$lat, naivePredictions$pres, col=meanColors, 
+		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
 plotbg(meanTitles[2])
 
-quilt.plot(intPresStats$long, intPresStats$lat, intPresStats$pres_mean, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+quilt.plot(intPresPredictions$long, intPresPredictions$lat, intPresPredictions$pres, col=meanColors, 
+		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
 plotbg(meanTitles[3])
 
-
-quilt.plot(naiveStats$long, naiveStats$lat, naiveStats$pres_SE, col=errorColors, 
-		xlim=xlim, ylim=ylim, zlim=errorZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+errDiffZlims = c(-0.0075, 0.0075)
+quilt.plot(naivePredictions$long, naivePredictions$lat, intPresPredictions$presSE - 
+		naivePredictions$presSE, col=errDiffCols, xlim=xlim, ylim=ylim, zlim=errDiffZlims, 
+		add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
 plotbg(errorTitles[1])
-
-quilt.plot(intPresStats$long, intPresStats$lat, intPresStats$pres_SE, col=errorColors, 
-		xlim=xlim, ylim=ylim, zlim=errorZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
-plotbg(errorTitles[2])
 
 ## scale bars
 par(mar=scaleMar)
-image(y=seq(meanZlims[1], meanZlims[2],length.out=101), z=matrix(seq(meanZlims[1], meanZlims[2],length.out=100), 
-	ncol=100, nrow=1), zlim=meanZlims, col=meanColors, xaxt='n', xlab='', ylab='', useRaster=T)
-# mtext(meanScaleTitle, line=0.5, cex = titleCEX)
-image(y=seq(errorZlims[1],errorZlims[2],length.out=101), z=matrix(seq(errorZlims[1], errorZlims[2],length.out=100), 
-	ncol=100, nrow=1), zlim=errorZlims, col=errorColors, xaxt='n', xlab='', ylab='', useRaster=T)
+image(x=seq(meanZlims[1], meanZlims[2],length.out=101), z=matrix(seq(meanZlims[1], meanZlims[2],length.out=100), 
+	nrow=100, ncol=1), zlim=meanZlims, col=meanColors, yaxt='n', xlab='', ylab='', useRaster=useR)
+mtext(meanScaleTitle, line=0.5, cex = titleCEX)
+image(x=seq(errDiffZlims[1],errDiffZlims[2],length.out=101), 
+	z=matrix(seq(errDiffZlims[1], errDiffZlims[2],length.out=100), 
+	nrow=100, ncol=1), zlim=errDiffZlims, col=errDiffCols, yaxt='n', xaxt='n', xlab='', ylab='', useRaster=useR)
+axis(side=1, at=seq(-0.006,0.006,0.003))
+mtext(errScaleTitle, line=0.5, cex = titleCEX)
 dev.off()
 
-
-
-
-
-
-
-
-
 pdf(file = "ex2_fut_map.pdf", height=pdfHeight, width=pdfWidth)
-layout(plotLayout, widths=layoutWidths)
+layout(plotLayout, heights=layoutHeights)
 par(mar=mapMar)
 
-statsSub = which(in.range(naiveStats$long, xlim) & in.range(naiveStats$lat, ylim))
+statsSub = which(in.range(naivePredictions$long, xlim) & in.range(naivePredictions$lat, ylim))
 errorZlims = 
 {
-	vals = c(naiveStats[statsSub, 'fut_SE'], intPresStats[statsSub, 'fut_SE'])
+	vals = c(naivePredictions[statsSub, 'futSE'], intFutPredictions[statsSub, 'futSE'])
 	c(min(vals), max(vals))
 }	
 meanTitles = c("A. Phenofit", "B. Naive", "C. Integrated-Future")
-errorTitles = c("D. Standard error (Naive)", "E. Standard error (Integrated-Future)")
+errorTitles = c("D. Uncertainty")
 
 quilt.plot(rawDat$all$long, rawDat$all$lat, rawDat$all$Phenofit_HadA2, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
 plotbg(meanTitles[1])
 
-quilt.plot(naiveStats$long, naiveStats$lat, naiveStats$fut_mean, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+quilt.plot(naivePredictions$long, naivePredictions$lat, naivePredictions$fut, col=meanColors, 
+		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
 plotbg(meanTitles[2])
 
-quilt.plot(intPresStats$long, intPresStats$lat, intPresStats$fut_mean, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+quilt.plot(intFutPredictions$long, intFutPredictions$lat, intFutPredictions$fut, col=meanColors, 
+		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
 plotbg(meanTitles[3])
 
 
-quilt.plot(naiveStats$long, naiveStats$lat, naiveStats$fut_SE, col=errorColors, 
-		xlim=xlim, ylim=ylim, zlim=errorZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
+errDiffZlims = c(-0.015, 0.015)
+quilt.plot(naivePredictions$long, naivePredictions$lat, intFutPredictions$futSE - 
+		naivePredictions$futSE, col=errDiffCols, xlim=xlim, ylim=ylim, zlim=errDiffZlims, 
+		add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
 plotbg(errorTitles[1])
 
-quilt.plot(intPresStats$long, intPresStats$lat, intPresStats$fut_SE, col=errorColors, 
-		xlim=xlim, ylim=ylim, zlim=errorZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=T)
-plotbg(errorTitles[2])
 
 ## scale bars
 par(mar=scaleMar)
-image(y=seq(meanZlims[1], meanZlims[2],length.out=101), z=matrix(seq(meanZlims[1], meanZlims[2],length.out=100), 
-	ncol=100, nrow=1), zlim=meanZlims, col=meanColors, xaxt='n', xlab='', ylab='', useRaster=T)
-# mtext(meanScaleTitle, line=0.5, cex = titleCEX)
-image(y=seq(errorZlims[1],errorZlims[2],length.out=101), z=matrix(seq(errorZlims[1], errorZlims[2],length.out=100), 
-	ncol=100, nrow=1), zlim=errorZlims, col=errorColors, xaxt='n', xlab='', ylab='', useRaster=T)
+image(x=seq(meanZlims[1], meanZlims[2],length.out=101), z=matrix(seq(meanZlims[1], meanZlims[2],length.out=100), 
+	nrow=100, ncol=1), zlim=meanZlims, col=meanColors, yaxt='n', xlab='', ylab='', useRaster=useR)
+mtext(meanScaleTitle, line=0.5, cex = titleCEX)
+image(x=seq(errDiffZlims[1],errDiffZlims[2],length.out=101), 
+	z=matrix(seq(errDiffZlims[1], errDiffZlims[2],length.out=100), 
+	nrow=100, ncol=1), zlim=errDiffZlims, col=errDiffCols, yaxt='n',xaxt='n', xlab='', ylab='', useRaster=useR)
+axis(side=1, at=seq(-0.01,0.01,0.005))
+mtext(errScaleTitle, line=0.5, cex = titleCEX)
 dev.off()
 

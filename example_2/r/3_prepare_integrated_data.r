@@ -17,7 +17,12 @@
 # 
 
 library(coda)
-naivePosterior = readRDS("results/naivePosterior.rds")
+
+# process the posterior
+naivePosterior = read.csv("results/mcmc/naivePosterior.csv", h=F)
+colnames(naivePosterior) = c('Intercept', 'ddeg', 'ddeg2', 'ddeg3', 'an_prcp', 'an_prcp2', 'pToPET', 'pToPET2')
+naivePosterior = mcmc(naivePosterior, start=20000*50, thin=50)
+
 rawData = readRDS("dat/rawData.rds")
 naiveSummary = summary(naivePosterior)
 
@@ -34,8 +39,9 @@ write.csv(intInits, file='dat/mcmc/integratedInits.csv', row.names = FALSE)
 integratedPresData = with(rawData$calib, data.frame(
 	ddeg1 = ddeg,
 	ddeg2 = ddeg^2,
-	sum_prcp1 = sum_prcp,
-	sum_prcp2 = sum_prcp^2,
+	ddeg3 = ddeg^3,
+	an_prcp1 = an_prcp,
+	an_prcp2 = an_prcp^2,
 	pToPET1 = pToPET,
 	pToPET2 = pToPET^2,
 	pres = Phenofit_CRU,
@@ -45,8 +51,9 @@ write.csv(integratedPresData, file="dat/mcmc/integratedPresData.csv", row.names 
 integratedFutureData = with(rawData$calib, data.frame(
 	ddeg1 = fut_ddeg,
 	ddeg2 = fut_ddeg^2,
-	sum_prcp1 = fut_sum_prcp,
-	sum_prcp2 = fut_sum_prcp^2,
+	ddeg3 = fut_ddeg^3,
+	an_prcp1 = fut_an_prcp,
+	an_prcp2 = fut_an_prcp^2,
 	pToPET1 = fut_pToPET,
 	pToPET2 = fut_pToPET^2,
 	pres = Phenofit_HadA2,
