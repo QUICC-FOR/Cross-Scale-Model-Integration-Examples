@@ -22,7 +22,7 @@
 
 
 ## Rscript usage
-## rscript ex1_sampling.r filename.pdf
+## rscript 4-makeSamplingFig.r filename.pdf
 ## will output plots to pdf
 
 
@@ -50,7 +50,7 @@ load("dat/ex1_m1.rdata")
 
 ## first plot: simulation data
 plot(m1SimData[,1], m1SimData[,2], col=sdmPoints.col(m1SimData[,3]), 
-	pch=sdmPoints.sym(m1SimData[,3]), xlab="", ylab="", xaxt='n', yaxt='n', ylim=c(-1,1))
+	pch=sdmPoints.sym(m1SimData[,3]), xlab="", ylab="", xaxt='n', yaxt='n', ylim=c(-1,1), xlim=c(0,1))
 make_axes(xlab="Precipitation", ylab="Temperature", main="(a) Simulated presence/absence samples")
 
 
