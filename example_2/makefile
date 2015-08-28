@@ -46,27 +46,38 @@ results/mcmc/integratedPresent.csv results/mcmc/integratedFuture.csv
 
 ## make figures
 
-figs: ex2_params.pdf ex2_response.pdf ex2_pres_map.pdf ex2_fut_map.pdf
-
-ex2_params.pdf: r/fig_params.r results/posteriors.rdat
-	Rscript r/fig_params.r
+figs: ex2_response.pdf ex2_params.pdf ex2_pres_map.png ex2_fut_map.png ex2_auc.png \
+ex2_calib.png plotmap.png
 
 ex2_response.pdf: r/fig_response_curves.r results/posteriors.rdata \
 dat/parameterScaling.rds dat/rawData.rds
 	Rscript r/fig_response_curves.r
 
-ex2_pres_map.pdf: r/fig_maps.r dat/figure/ne_50m_ocean dat/figure/ne_50m_lakes \
-dat/figure/acersacr dat/rawData.rds results/naiveStats.rds results/intPresStats.rds \
-results/intFutStats.rds
+ex2_params.pdf: r/fig_params.r results/posteriors.rdat
+	Rscript r/fig_params.r
+
+ex2_pres_map.png: r/fig_maps.r dat/figure/ne_50m_ocean dat/figure/ne_50m_lakes \
+dat/rawData.rds results/posteriors.rdata
 	Rscript r/fig_maps.r
+	
+ex2_fut_map.png: ex2_pres_map.png
 
-ex2_fut_map.pdf: ex2_pres_map.pdf
+ex2_auc.png: r/evaluation.r dat/rawData.rds results/posteriors.rdata
+	Rscript r/evaluation.r
+
+ex2_calib.png: r/calib-curve.r dat/rawData.rds results/posteriors.rdata
+	Rscript r/calib-curve.r
+
+plotmap.png: r/fig_plotmap.r dat/figure/ne_50m_ocean dat/figure/ne_50m_lakes dat/raw/AceSac_pres.rds
+	Rscript r/fig_plotmap.r
 
 
 
-## Validation
-auc.txt: r/validation.r dat/rawData.rds results/naivePosterior.rds results/integratedPresentPosterior.rds
-	Rscript r/validation.r
+
+
+
+	
+
 
 
 ################

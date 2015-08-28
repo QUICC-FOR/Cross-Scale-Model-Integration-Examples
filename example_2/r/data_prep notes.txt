@@ -1,4 +1,0 @@
-selected all presence-absence data from 1980-2000
-took the union of any plots with multiple observations in that period (i.e., absences
-	were plots where ALL observations had an absence)
-	
