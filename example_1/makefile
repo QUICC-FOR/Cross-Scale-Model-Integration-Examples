@@ -38,9 +38,11 @@ ex1_precip.pdf: 5-makePrecipFig.r ex1_globals.r dat/ex1_m1.rdata dat/ex1_m2.rdat
 dat/ex1_mm.rdata 
 	Rscript 5-makePrecipFig.r ex1_precip.pdf
 
-ex1_map.pdf: 6-makeMapFig.r ex1_globals.r dat/ex1_m1.rdata dat/ex1_m2.rdata \
+ex1_map.png: 6-makeMapFig.r ex1_globals.r dat/ex1_m1.rdata dat/ex1_m2.rdata \
 dat/ex1_mm.rdata
-	Rscript 6-makeMapFig.r ex1_map.pdf
+	Rscript 6-makeMapFig.r ex1_map.png
 
+ex1_params.png: 7-makeParamFig.r dat/ex1_m1.rdata dat/ex1_m2.rdata dat/ex1_mm.rdata
+	Rscript 7-makeParamFig.r
 
 

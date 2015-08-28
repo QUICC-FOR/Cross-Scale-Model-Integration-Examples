@@ -20,8 +20,8 @@
 # produces a figure showing a map of model integration results
 
 ## Rscript usage
-## rscript ex1_results.r filename.pdf
-## will output plots to pdf
+## rscript ex1_results.r filename.png
+## will output plots to png
 
 ## setup
 library(rjags)
@@ -38,7 +38,12 @@ main <- function() {
 
 	filename <- commandArgs(TRUE)[1]
 	source("ex1_globals.r")
-	pdf(file=filename, width=width, height=height.map)
+
+	dpi = 600
+	imgwidth = as.integer(dpi*width)
+	imgheight=height.map*dpi
+	fontsize = 12
+	png(w=imgwidth, h=imgheight, file=filename, pointsize=fontsize, res = dpi)
 
 	layout(matrix(c(1,2,3,4,5,6,7,8), nrow=2, byrow=TRUE), widths=c(4,1,4,1), heights=c(4,4))
 	par(xpd=FALSE, bty=bty, mgp=mgp, tcl=tcl)

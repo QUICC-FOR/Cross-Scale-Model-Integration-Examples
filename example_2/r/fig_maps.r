@@ -1,3 +1,4 @@
+#!/usr/bin/Rscript
 # 
 #   Copyright 2014 Matthew V Talluto, Isabelle Boulangeat, Dominique Gravel
 # 
@@ -22,15 +23,17 @@
 #
 
 
-library(fields)
 library(rgdal)
 library(coda)
+library(raster)
+P4S.albers <- CRS("+init=epsg:5070") # albers equal area conic NAD-83 north america
+P4S.latlon <- CRS("+proj=longlat +datum=WGS84")
 
 in.range = function(x, lims) x >= lims[1] & x <= lims[2]
 
 rawDat = readRDS("dat/rawData.rds")
 load("results/posteriors.rdata")
-useR = TRUE
+useR = FALSE
 
 ocean = readOGR(dsn="dat/figure/ne_50m_ocean", layer="ne_50m_ocean")
 lakes = readOGR(dsn="dat/figure/ne_50m_lakes", layer="ne_50m_lakes")
@@ -38,7 +41,10 @@ mapleRange = readOGR(dsn="dat/figure/acersacr", layer="acersacr")
 # grab specific lakes
 lkNames = c("Huron", "Michigan", "Superior", "Ontario", "Erie", "St. Clair")
 grLakes = lakes[as.integer(sapply(lkNames, grep, lakes$name)),]
-
+ocean.albers = spTransform(ocean, P4S.albers)
+grLakes.albers = spTransform(grLakes, P4S.albers)
+proj4string(mapleRange) = P4S.latlon
+mapleRange.albers = spTransform(mapleRange, P4S.albers)
 
 meanColors = colorRampPalette(c("#ffffff", "#bdc9e1", "#045a8d", "#33338d", "#cc99ff"), interpolate='spline', bias=1, space="rgb")(200)
 errorColors = colorRampPalette(c("#ffffff", "#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"), interpolate='spline', space="rgb", bias=1.4)(200)
@@ -47,21 +53,28 @@ meanZlims = c(0,1)
 rangeBorder = '#FF3333bb'
 rangeLwd = 1.2
 rangeCol = "#66666600"
-xlim=c(-105, -55)
-ylim=c(30,65)
+xlim=c(-5e5,3e6)
+ylim=c(7e5, 5e6)
+
 titleCEX = 0.7
 
 plotbg = function(txt="")
 {
-	plot(ocean, col="white", add=T)
-	plot(mapleRange[c(1,3,47,43),], border=rangeBorder, col=rangeCol, add=T, lwd=rangeLwd)
-	plot(grLakes, col="white", add=T)
+	plot(ocean.albers, col="white", add=T)
+	plot(mapleRange.albers[c(1,3,47,43),], border=rangeBorder, col=rangeCol, add=T, lwd=rangeLwd)
+	plot(grLakes.albers, col="white", add=T)
 	mtext(txt, adj=0, cex = titleCEX)
 }
 
 pdfWidth = 6.5
 pdfHeight = 2.75
-pdf(file = "ex2_pres_map.pdf", height=pdfHeight, width=pdfWidth)
+
+dpi = 600
+imgwidth = as.integer(dpi*pdfWidth)
+imgheight=as.integer(pdfHeight*dpi)
+fontsize = 12
+png(w=imgwidth, h=imgheight, file="ex2_pres_map.png", pointsize=fontsize, res = dpi)
+
 plotLayout = matrix(c(
 	1,2,3,4,
 	5,5,6,6),
@@ -73,31 +86,38 @@ par(mar=mapMar)
 scaleMar = c(2.25,0.75,1.75,1.75)
 
 statsSub = which(in.range(naivePredictions$long, xlim) & in.range(naivePredictions$lat, ylim))
-errorZlims = 
-{
-	vals = c(naivePredictions[statsSub, 'presSE'], intPresPredictions[statsSub, 'presSE'])
-	c(min(vals), max(vals))
-}	
 meanTitles = c("A. Phenofit", "B. Naive", "C. Integrated-Present")
 errorTitles = c("D. Uncertainty")
 meanScaleTitle = 'Probability of presence'
 errScaleTitle = expression('Integrated SE - Naive SE')
-quilt.plot(rawDat$all$long, rawDat$all$lat, rawDat$all$Phenofit_CRU, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
+
+makeRaster = function(dat, colName)
+{
+	ras = dat[,c('long', 'lat', colName)]
+	coordinates(ras) = c('long', 'lat')
+	gridded(ras) = TRUE
+	ras = raster(ras)
+	proj4string(ras) = P4S.latlon
+	projectRaster(ras, crs=P4S.albers)
+}
+
+phenPres = makeRaster(rawDat$all, 'Phenofit_CRU')
+image(phenPres, col=meanColors, xlim=xlim, ylim=ylim, zlim=meanZlims, xaxt='n', yaxt='n')
+
 plotbg(meanTitles[1])
 
-quilt.plot(naivePredictions$long, naivePredictions$lat, naivePredictions$pres, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
+naivePres = makeRaster(naivePredictions, 'pres')
+image(naivePres, col=meanColors, xlim=xlim, ylim=ylim, zlim=meanZlims, xaxt='n', yaxt='n')
 plotbg(meanTitles[2])
 
-quilt.plot(intPresPredictions$long, intPresPredictions$lat, intPresPredictions$pres, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
+intPres = makeRaster(intPresPredictions, 'pres')
+image(intPres, col=meanColors, xlim=xlim, ylim=ylim, zlim=meanZlims, xaxt='n', yaxt='n')
 plotbg(meanTitles[3])
 
 errDiffZlims = c(-0.0075, 0.0075)
-quilt.plot(naivePredictions$long, naivePredictions$lat, intPresPredictions$presSE - 
-		naivePredictions$presSE, col=errDiffCols, xlim=xlim, ylim=ylim, zlim=errDiffZlims, 
-		add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
+naivePredictions$errorPres = intPresPredictions$presSE - naivePredictions$presSE
+errPres = makeRaster(naivePredictions, 'errorPres')
+image(errPres, col=errDiffCols, xlim=xlim, ylim=ylim, zlim=errDiffZlims, xaxt='n', yaxt='n')
 plotbg(errorTitles[1])
 
 ## scale bars
@@ -112,36 +132,31 @@ axis(side=1, at=seq(-0.006,0.006,0.003))
 mtext(errScaleTitle, line=0.5, cex = titleCEX)
 dev.off()
 
-pdf(file = "ex2_fut_map.pdf", height=pdfHeight, width=pdfWidth)
+png(w=imgwidth, h=imgheight, file="ex2_fut_map.png", pointsize=fontsize, res = dpi)
 layout(plotLayout, heights=layoutHeights)
 par(mar=mapMar)
 
 statsSub = which(in.range(naivePredictions$long, xlim) & in.range(naivePredictions$lat, ylim))
-errorZlims = 
-{
-	vals = c(naivePredictions[statsSub, 'futSE'], intFutPredictions[statsSub, 'futSE'])
-	c(min(vals), max(vals))
-}	
 meanTitles = c("A. Phenofit", "B. Naive", "C. Integrated-Future")
 errorTitles = c("D. Uncertainty")
 
-quilt.plot(rawDat$all$long, rawDat$all$lat, rawDat$all$Phenofit_HadA2, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
+phenFut = makeRaster(rawDat$all, 'Phenofit_HadA2')
+image(phenFut, col=meanColors, xlim=xlim, ylim=ylim, zlim=meanZlims, xaxt='n', yaxt='n')
 plotbg(meanTitles[1])
 
-quilt.plot(naivePredictions$long, naivePredictions$lat, naivePredictions$fut, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
+naiveFut = makeRaster(naivePredictions, 'fut')
+image(naiveFut, col=meanColors, xlim=xlim, ylim=ylim, zlim=meanZlims, xaxt='n', yaxt='n')
 plotbg(meanTitles[2])
 
-quilt.plot(intFutPredictions$long, intFutPredictions$lat, intFutPredictions$fut, col=meanColors, 
-		xlim=xlim, ylim=ylim, zlim=meanZlims, add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
+intFut = makeRaster(intFutPredictions, 'fut')
+image(intFut, col=meanColors, xlim=xlim, ylim=ylim, zlim=meanZlims, xaxt='n', yaxt='n')
 plotbg(meanTitles[3])
 
 
 errDiffZlims = c(-0.015, 0.015)
-quilt.plot(naivePredictions$long, naivePredictions$lat, intFutPredictions$futSE - 
-		naivePredictions$futSE, col=errDiffCols, xlim=xlim, ylim=ylim, zlim=errDiffZlims, 
-		add.legend=F, xaxt='n', yaxt='n', useRaster=useR)
+naivePredictions$errorFut = intFutPredictions$futSE - naivePredictions$futSE
+errorFut = makeRaster(naivePredictions, 'errorFut')
+image(errorFut, col=errDiffCols, xlim=xlim, ylim=ylim, zlim=errDiffZlims, xaxt='n', yaxt='n')
 plotbg(errorTitles[1])
 
 

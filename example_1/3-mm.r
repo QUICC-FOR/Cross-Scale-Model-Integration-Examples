@@ -38,11 +38,11 @@ m2Stats$tau <- 1/(m2Stats$SD^2)
 precisionReduction <- 20
 
 bPrior <- matrix(c(
-	m2Stats$Mean[1], m2Stats$tau[1]/20,	# mean and tau for b0 (intercept)
-	0.0, 1.0E-4,						# b1 (first temp parameter)
-	0.0, 1.0E-4,						# b2 (temp^2 parameter) - this and the one above are uninformative because we only have info on precipitation
-	m2Stats$Mean[2],m2Stats$tau[2]/20,	# b3 (precip)
-	m2Stats$Mean[3],m2Stats$tau[3]/20),	# b4 (precip^2)
+	m2Stats$Mean[1], m2Stats$tau[1]/precisionReduction,	# mean and tau for b0 (intercept)
+	0.0, 1.0E-4,										# b1 (first temp parameter)
+	0.0, 1.0E-4,										# b2 (temp^2 parameter) - this and the one above are uninformative because we only have info on precipitation
+	m2Stats$Mean[2],m2Stats$tau[2]/precisionReduction,	# b3 (precip)
+	m2Stats$Mean[3],m2Stats$tau[3]/precisionReduction),	# b4 (precip^2)
 	byrow=TRUE, ncol=2)
 
 ## compute the integrated meta-model

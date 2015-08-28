@@ -1,66 +1,397 @@
-cat("hello")
-dbh <- scan()
-pctser <- scam()
-45.1612903226.8882175249.0301724134.1463414647.810218980.8498583570.29850746344.132653062.0057306594.1916167663.3240997234.3715846995.76923076910.4395604411.462450595.3030303035.21472392648.8764044934.220532322.7972027973.5019455252.0080321292.39726027411.351351355.241935484
-pctser <- scan()
-elev <- scan()
-dat <- data.frame(elev, pctser, dbh)
+all.equal(fir[,1:36], map1)
+cp = readRDS("~/Dropbox/work/projects/STModel-Two-State_git/data_results/climDataPlots.rds")
+all.equal(map1, cp)
+str(map1)
+str(cp)
+dim(map1)
+dim(cp)
+install.packages(c("gam", "randomForest"))
+dcauchy
+dcauchy(71.3757, 0, 19)
+dcauchy(71.3757, 0, 10)
+dnorm(71.3757, 0, 10)
+dnorm(71.3757, 0, 10, log=T)
+dnorm(71.3757, 0, 10, log=T) - dnorm(0,0,10)
+dnorm(71.3757, 0, 10, log=T) - dnorm(0,0,10, log=T)
+dcauchy(71.3757, 0, 10, log=T) - dcauchy(0,0,10, log=T)
+dnorm(71.3757, 0, 10000, log=T) - dnorm(0,0,10000, log=T)
+install.packages('GenSA')
+0^(-1)
+0.001^(-1)
+0.001/0.234
+(0.001/0.234)^(-1)
+resp = rnorm(10,0,1)
+preds = matrix(rnorm(100), ncol=10)
+apply(preds, 2, function(x) cor(resp, x))
+mods = apply(preds, 2, function(x) lm(resp~x))
+sm = summary(mods[[1]])
+sm
+names(sm)
+sm$fstatistic
+df(.1258, 1, 8)
+pf(.1258, 1, 8)
+1-pf(.1258, 1, 8)
+pf(.1258, 1, 8, lower.tail=F)
+sapply(mods, function(x) {
+ff = summary(x)$fstatistic
+pf(ff[1], ff[2], ff[3], lower.tail=F)})
+library(coda)
+?plot.mcmc
+packageLoaded()
+?library
+exists(GenSA)
+?exists
+?GenSA
+library(GenSA)
+exists("GenSA")
+load("/Users/mtalluto/Dropbox/work/projects/STModel-Two-State_git/anneal2/183295-PIC-GLA/183295-PIC-GLA_climGrid_projected.rds")
+load("/Users/mtalluto/Dropbox/work/projects/STModel-Two-State_git/anneal2/183295-PIC-GLA/183295-PIC-GLA_climGrid_scaled.rds")
+load("/Users/mtalluto/Dropbox/work/projects/STModel-Two-State_git/anneal2/183295-PIC-GLA/183295-PIC-GLA_processed.rdata")
+load("/Users/mtalluto/Dropbox/work/projects/STModel-Two-State_git/anneal2/183295-PIC-GLA/183295-PIC-GLA_transitions_projected_subsample.rds")
+load("/Users/mtalluto/Dropbox/work/projects/STModel-Two-State_git/anneal2/183295-PIC-GLA/183295-PIC-GLA_transitions_projected.rds")
+load("/Users/mtalluto/Dropbox/work/projects/STModel-Two-State_git/anneal2/183295-PIC-GLA/transition_twostate_183295-PIC-GLA.rdata")
+#!/usr/bin/Rscriptlibrary(GenSA)targetInterval = 5modType = "rf"parameters = scan("~/anneal2/inp.txt", what=character())spName = parameters[1]tempVar = parameters[2]precipVar = parameters[3]colDesign = sapply(1:nchar(parameters[4]), function(i) as.integer(substr(parameters[4],i,i)))extDesign = sapply(1:nchar(parameters[5]), function(i) as.integer(substr(parameters[5],i,i)))design_err = function(x){	err = length(x) != 7 | !setequal(x, c(0,1))}if(design_err(colDesign) | design_err(extDesign)) 	stop("Error in colonization or extinction design vectors: must be a vector of length 7 containing only 0 or 1")
+minus_log_likelihood = function(params, dat, parlist){	# parlist is a vector of 1s and zeros indicating which positions in the likelihood	# should be included; the number of 1s should be equal to the length of params	numPars = 14	if(sum(parlist) != length(params)) 		stop("Number of parameters must equal the number specified in parlist")	if(length(parlist) < numPars) 		stop(paste("Parlist must have", numPars, 				"items (the number of parameters in the full model)"))	p = rep(0, numPars)	p[parlist == 1] = params#
+	# full model linear predictors	logit_gamma_annual = p[1] + p[2]*dat$env1 + p[3]*dat$env2 + p[4]*dat$env1^2 + 			p[5]*dat$env2^2 + p[6]*dat$env1^3 + p[7]*dat$env2^3 	logit_epsilon_annual = p[8] + p[9]*dat$env1 + p[10]*dat$env2 + p[11]*dat$env1^2 + 			p[12]*dat$env2^2 + p[13]*dat$env1^3 + p[14]*dat$env2^3 	# model macro parameters - gamma and epsilon	gamma_annual = plogis(logit_gamma_annual)	epsilon_annual = plogis(logit_epsilon_annual)	gamma_interval =  1 - (1 - gamma_annual)^(dat$interval/targetInterval)	epsilon_interval =  1 - (1 - epsilon_annual)^(dat$interval/targetInterval)	# likelihood	colonizations = which(dat$state1 == 0 & dat$state2 == 1)	extinctions = which(dat$state1 == 1 & dat$state2 == 0)	presences = which(dat$state1 == 1 & dat$state2 == 1)	absences = which(dat$state1 == 0 & dat$state2 == 0)#
+	liklihood = numeric(nrow(dat))	liklihood[colonizations] = gamma_interval[colonizations] * 			dat$expectedPresence[colonizations]	liklihood[extinctions] = epsilon_interval[extinctions]	liklihood[presences] = 1 - epsilon_interval[presences]	liklihood[absences] = 1 - gamma_interval[absences] * dat$expectedPresence[absences]#
+	# guard against likelihood of zero	liklihood[liklihood==0] = .Machine$double.xmin#
+	return(-1 * sum(log(liklihood)))}#
+transitionData = readRDS(paste("~/anneal2/",spName, "/", spName, "_transitions_projected_subsample.rds", sep=""))modelData = data.frame(state1 = transitionData$state1, 		state2 = transitionData$state2,		interval = (transitionData$year2 - transitionData$year1), 		env1 = transitionData[,tempVar], 		env2 = transitionData[,precipVar])if(modType == "gam"){	modelData$expectedPresence = transitionData$expectedGAM	prevalenceVar = "GAM"} else if(modType == "rf"){	modelData$expectedPresence = transitionData$expectedRF	prevalenceVar = "RF"} else{	modelData$expectedPresence = transitionData$expectedGLM	prevalenceVar = "GLM"}#
+# set up initial values for the parameters# calculate average colonization and extinction probability# 1 - (1 - C/P)^(1/i); where C is colonization prob (i.e., gamma * Presence)pr.c = with(modelData, 1 - (1 - (sum(state1==0 & state2==1)/length(state1))/		mean(expectedPresence))^(1/mean(interval)))  pr.e = with(modelData, 1 - (1 - sum(state1==1 & state2==0)/length(state1))^(1/mean(interval)))parameters = rep(0, sum(colDesign)+sum(extDesign))if(colDesign[1] == 1) parameters[1] = pr.cif(extDesign[1] == 1) parameters[sum(colDesign)+1] = pr.econtrolPars =list(verbose = TRUE, max.time = (1*60), smooth=TRUE)
+annealParams = GenSA(par = parameters, fn = minus_log_likelihood, 		lower = rep(-50, length(parameters)), upper = rep(50, length(parameters)), 		 control = controlPars, dat = modelData, parlist=c(colDesign, extDesign))
+mll = minus_log_likelihood(annealParams$par, modelData, c(colDesign, extDesign))annealResults = list(	params = annealParams$par,	AIC = 2*mll + 2*length(annealParams$par),	BIC = 2*mll + log(nrow(modelData))*length(annealParams$par),	env1 = tempVar,	env2 = precipVar,	colDesign = colDesign,	extDesign = extDesign,	species = spName,	prevalenceVar = prevalenceVar,	annealParams = annealParams)
+mll
+annealResults
+resultDir = paste("~/anneal2/", spName, "/out", sep="")
+resultDir
+dir.create(resultDir, showWarnings=FALSE, recursive=TRUE)
+paste(resultDir, "/", spName, "_", annealResults$env1, "_", 		annealResults$env2, "_", annealResults$colDesign, "_", annealResults$extDesign, 		".rds", sep="")
+saveRDS(annealResults, paste(resultDir, "/", spName, "_", annealResults$env1, "_", 		annealResults$env2, "_", annealResults$colDesign, "_", annealResults$extDesign, 		".rds", sep=""))
+paste(resultDir, "/", spName, "_", annealResults$env1, "_", #
+		annealResults$env2, sep="")
+filename = paste(spName, annealResults$env1, annealResults$env2, sep="-")
+paste(annealResults$colDesign, collapse=T)
+paste(annealResults$colDesign, collapse="")
+filename = paste(spName, annealResults$env1, annealResults$env2, 		paste(annealResults$colDesign, collapse=""), 		paste(annealResults$extDesign, collapse="") sep="-")
+filename = paste(spName, annealResults$env1, annealResults$env2, 		paste(annealResults$colDesign, collapse=""), 		paste(annealResults$extDesign, collapse=""), sep="-")
+filename
+resultDir = paste("~/anneal2/", spName, "/out/", sep="")dir.create(resultDir, showWarnings=FALSE, recursive=TRUE)filename = paste(spName, annealResults$env1, annealResults$env2, 		paste(annealResults$colDesign, collapse=""), 		paste(annealResults$extDesign, collapse=""), sep="-")
+saveRDS(annealResults, paste(resultDir, filename, ".rds", sep=""))
+list.files()
+readRDS("~/Dropbox/work/projects/STModel-Two-State_git/anneal2/18032-ABI-BAL/out/18032-ABI-BAL-gdd_above_base_temp_period2-pp_driest_period-1000000-1000000.rds")
+readRDS("~/Dropbox/work/projects/STModel-Two-State_git/anneal2/18032-ABI-BAL/out/18032-ABI-BAL-gdd_above_base_temp_period2-pp_driest_period-1000000-1000000.rds") -> a
+names(a)
+?saveRDS
+dat = read.table("~/Dropbox/work/projects/STModel-MCMC_git/run2/183295-PIC-GLA/trans.txt", sep=',')
+nrow(dat)
+dat2 = dat[sample(1:nrow(dat), as.integer(nrow(dat)*.25))]
+nrow(dat2)
+dat = read.table("~/Dropbox/work/projects/STModel-MCMC_git/run2/183295-PIC-GLA/trans.txt", sep=',', h=T)
 head(dat)
-dat$he <- (elev > median(elev))
-dat
-with(dat[!dat$he,], cor(pctser, dbh))
-ser <- scan()
-ns <- scan()
-tot <- ser+ns
-cor(tot, pctser)
-cor(tot, dbh)
-ba <- scan()
-ba
-ba <- ba[-19]
-cor(ba, dbh)
-cor(ba, tot)
-dat$tot <- tot
-dat$ba <- ba
-cor(dat[!dat$he])
-cor(dat[!dat$he,])
-cor(dat)
-cor(dat[dat$he,])
-ctest <- function() {
-a <- runif(1)
-b <- runif(1)
-cor(a,b)}
-res <- sapply(1:1000, function(i) ctest())
-hist(res)
-head(res)
-ctest
-ctest()
-runif(1)
-ctest <- function() {
-a <- runif(3)
-b <- runif(3)
-cor(a,b)}
-res <- sapply(1:1000, function(i) ctest())
-hist(res)
-ctest <- function(n) {
-a <- runif(n)
-b <- runif(n)
-cor(a,b)
-}
-res <- sapply(1:1000, function(i) ctest(10))
-hist(res)
-res <- sapply(1:1000, function(i) ctest(5))
-hist(res)
-sum((res>0.7)/1000)
-res <- sapply(1:1000, function(i) ctest(10))
-sum((res>0.7)/1000)
-sum((abs(res>0.7))/1000)
-sum((abs(res)>0.7)/1000)
-res <- sapply(1:1000, function(i) ctest(5))
-sum((abs(res)>0.7)/1000)
-res <- sapply(1:1000, function(i) ctest(4))
-sum((abs(res)>0.7)/1000)
-res <- sapply(1:1000, function(i) ctest(3))
-sum((abs(res)>0.7)/1000)
-setwd("~/Documents/git_projects/Cross-Scale-Model-Integration-Examples/example_1")
-library(rjags)
-height <- 2.5
+dat2 = dat[sample(1:nrow(dat), as.integer(nrow(dat)*.25)),]
+write.csv(dat2, file="~/Dropbox/work/projects/STModel-MCMC_git/run2/test/trans.txt")
+write.csv(dat2, file="~/Dropbox/work/projects/STModel-MCMC_git/run2/test/trans.txt", row.names=F)
+x = c(1,1,1,1,1,1,1)
+length(x)
+setequal(x, c(0,1))
+?setequal
+length(x) != 7 | (!setequal(x, c(0,1) and !setequal(x, 1)))
+length(x) != 7 | (!setequal(x, c(0,1) & !setequal(x, 1)))
+length(x) != 7 | (!setequal(x, c(0,1)))
+x
+setequal(x, 1)
+!setequal(x, 1)
+setequal(x, c(0,1)
+length(x) != 7 | (!setequal(x, c(0,1)) & !setequal(x, 1))
+xx = seq(-2, 2, length.out=1000)c1 = qlogis(-xx)e1 = qlogis(xx)plot(xx, c1, type='l', col='blue')lines(xx, e1, col='red')
+xx = seq(-2, 2, length.out=1000)c1 = plogis(-xx)e1 = plogis(xx)plot(xx, c1, type='l', col='blue')lines(xx, e1, col='red')
+xx = seq(-2, 2, length.out=1000)c1 = plogis(-xx)e1 = plogis(xx)c2 = plogis(-0.5*xx)e2 = plogis(0.5*xx)plot(xx, c1, type='l', col='blue')lines(xx, e1, col='red')lines(xx, c2, col='blue', lty=2)lines(xx, e2, col='red', lty=2)
+xx = seq(-5, 5, length.out=1000)c1 = plogis(-xx)e1 = plogis(xx)c2 = plogis(-0.5*xx)e2 = plogis(0.5*xx)plot(xx, c1, type='l', col='blue')lines(xx, e1, col='red')lines(xx, c2, col='blue', lty=2)lines(xx, e2, col='red', lty=2)
+xx = seq(-5, 5, length.out=1000)c1 = plogis(-xx)e1 = plogis(xx)c2 = plogis(1+-0.5*xx)e2 = plogis(0.5*xx)plot(xx, c1, type='l', col='blue')lines(xx, e1, col='red')lines(xx, c2, col='blue', lty=2)lines(xx, e2, col='red', lty=2)
+xx = seq(-5, 5, length.out=1000)c1 = plogis(-xx)e1 = plogis(xx)c2 = plogis(-0.4*xx)e2 = plogis(0.4*xx)plot(xx, c1, type='l', col='blue')lines(xx, e1, col='red')lines(xx, c2, col='blue', lty=2)lines(xx, e2, col='red', lty=2)
+plot(xx, c1, type='l', col='blue', xlab="Environmental Gradient", xaxt='n')
+plot(xx, c1, type='l', col='blue', xlab="Environmental gradient", 		ylab="Colonization/extinction rates", xaxt='n', yaxt='n')lines(xx, e1, col='red')lines(xx, c2, col='blue', lty=2)lines(xx, e2, col='red', lty=2)
+quartz(w=4, h=4)par(mgp=c(1,0,0), mar=c(1,1,1,1))plot(xx, c1, type='l', col='blue', xlab="Environmental gradient", 		ylab="Colonization/extinction rates", xaxt='n', yaxt='n')lines(xx, e1, col='red')lines(xx, c2, col='blue', lty=2)lines(xx, e2, col='red', lty=2)
+par(mgp=c(1,0,0), mar=c(2,2,0.5,0.5))plot(xx, c1, type='l', col='blue', xlab="Environmental gradient", 		ylab="Colonization/extinction rates", xaxt='n', yaxt='n')lines(xx, e1, col='red')lines(xx, c2, col='blue', lty=2)lines(xx, e2, col='red', lty=2)
+?arrow
+N = c(20, 50)
+co = 0.2
+ex = 0.1
+M
+co = .3
+M = matrix(c(1-co, co, ex, 1-ex), byrow=T, nrow=2)
+eigen(M)
+co - ex
+m1 = readRDS("~/Desktop/STModel-Two-State/species/18032-ABI-BAL/res/18032-ABI-BAL_bestAnnealModel.rds")
+summary(m1)
+m1$annealParams
+m1$annealParams$par
+names(m1)
+m1$params
+m1$colDesign
+m1$extDesign
+msel = readRDS("~/Desktop/STModel-Two-State/species/18032-ABI-BAL/res/18032-ABI-BAL_modelSelection.rds")
+e1 = function(x1, x2) qlogis(-2.594 - 1.8027*x1 + .15815*x2 + 0.09122895*x1^2 + 0.52578455*x2^2)
+x2 = 0
+plot(x1, e1(x1), type='l')
+e1 = function(x1, x2) plogis(-2.594 - 1.8027*x1 + .15815*x2 + 0.09122895*x1^2 + 0.52578455*x2^2)
+lines(x1, e1(x1, 1))
+lines(x1, e1(x1, 2))
+lines(x1, e1(x1, 3))
+lines(x1, e1(x1, -3))
+x1 = seq(-10, 10, .01)
+plot(x1, e1(x1, x2), type='l')
+e2 = function(x1, x2) plogis(-2.96332823 - 0.65973271*x1 -0.44309385*x2 -0.15575690*x1^2 + 0.32537613*x2^2)
+compute_e = function(p, env1, env2){	plogis(p[8] + env1*p[9] + env2*p[10] + env1^2*p[11] + env2^2*p[12] + env1^3*p[13] + env2^3*p[14])}#
+compute_c = function(p, env1, env2){	plogis(p[1] + env1*p[2] + env2*p[3] + env1^2*p[4] + env2^2*p[5] + env1^3*p[6] + env2^3*p[7])}
+x1 - seq(-3, 3, .01)
+x1 = seq(-3, 3, .01)
+plot(x1, e1(x1, x2), type='l', col='blue')
+lines(x1, e2(x1, x2), col='red')
+ls()
+theMod = m1
+spName = "18032-ABI-BAL"
+head(msel)
+pars = theMod$annealParams$par	design =c(theMod$colDesign, theMod$extDesign)	p = rep(0, length(design))	p[design == 1] = pars
+pars
+p
+design
+length(design)
+length(p)
+spName
+library(reshape2)#
+library(ggplot2)#
+#
+tasks <- c("Review literature", "Mung data", "Stats analysis", "Write Report")#
+dfr <- data.frame(#
+  name        = factor(tasks, levels = tasks),#
+  start.date  = as.Date(c("2010-08-24", "2010-10-01", "2010-11-01", "2011-02-14")),#
+  end.date    = as.Date(c("2010-10-31", "2010-12-14", "2011-02-28", "2011-04-30")),#
+  is.critical = c(TRUE, FALSE, FALSE, TRUE)#
+)#
+mdfr <- melt(dfr, measure.vars = c("start.date", "end.date"))
+ggplot(mdfr, aes(value, name, colour = is.critical)) + #
+  geom_line(size = 6) +#
+  xlab(NULL) + #
+  ylab(NULL)
+ms = readRDS()
+ms = readRDS(("~/Desktop/STModel-Two-State/species/18032-ABI-BAL/res/18032-ABI-BAL_modelSelection.rds"))
+ms = readRDS("~/Desktop/STModel-Two-State/species/28731-ACE-SAC/res/28731-ACE-SAC_modelSelection.rds")
+ms =("~/Desktop/STModel-Two-State/species/19290-QUE-ALB/res/19290-QUE-ALB_modelSelection.rds readRDS")
+ms =readRDS("~/Desktop/STModel-Two-State/species/19290-QUE-ALB/res/19290-QUE-ALB_modelSelection.rds readRDS")
+ms =readRDS("~/Desktop/STModel-Two-State/species/19290-QUE-ALB/res/19290-QUE-ALB_modelSelection.rds")
+ms = readRDS("~/Desktop/STModel-Two-State/species/195773-POP-TRE/res/195773-POP-TRE_modelSelection.rds")
+ms = ms[order(ms$BIC),]
+ms = ms[order(ms$AIC),]
+head(ms)
+head(ms, 10)
+ms = readRDS("~/Desktop/STModel-Two-State/species/32931-FRA-AME/res/32931-FRA-AME_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/183385-PIN-STR/res/183385-PIN-STR_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/19462-FAG-GRA/res/19462-FAG-GRA_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/19489-BET-PAP/res/19489-BET-PAP_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/183295-PIC-GLA/res/183295-PIC-GLA_modelSelection.rds")
+tail(ms)
+ms=readRDS("~/Desktop/STModel-Two-State/species/183302-PIC-MAR/res/183302-PIC-MAR_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/28728-ACE-RUB/res/28728-ACE-RUB_modelSelection.rds")
+with(ms, sum(AICw))
+with(ms, sum(AICw[env2=='pp_warmest_quarter']))
+with(ms, sum(AICw[env1=='pp_warmest_quarter']))
+ms=readRDS("~/Desktop/STModel-Two-State/species/19481-BET-ALL/res/19481-BET-ALL_modelSelection.rds")
+with(ms, sum(AICw[env1=='annual_mean_temp']))
+with(ms, sum(AICw[env1=='mean_diurnal_range']))
+with(ms, sum(AICw[env1=='pp_seasonality']))
+with(ms, sum(AICw[env2=='pp_seasonality']))
+ms=readRDS("~/Desktop/STModel-Two-State/species/19408-QUE-RUB/res/19408-QUE-RUB_modelSelection.rds")
+with(ms, sum(AICw[env2==env2[1] | env1==env2[1]]))
+with(ms, c(sum(AICw[env1] == env1[1], sum(AICw[env2==env2[1] | env1==env2[1]])))
+)
+with(ms, c(sum(AICw[env1] == env1[1]]), sum(AICw[env2==env2[1] | env1==env2[1]])))
+ms=readRDS("~/Desktop/STModel-Two-State/species/19049-ULM-AME/res/19049-ULM-AME_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/19447-QUE-VEL/res/19447-QUE-VEL_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/32929-FRA-PEN/res/32929-FRA-PEN_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/183319-PIN-BAN/res/183319-PIN-BAN_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/27821-NYS-SYL/res/27821-NYS-SYL_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/19280-QUE-NIG/res/19280-QUE-NIG_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/18086-LIR-TUL/res/18086-LIR-TUL_modelSelection.rds")
+ms=readRDS("~/Desktop/STModel-Two-State/species/18037-PIN-TAE/res/18037-PIN-TAE_modelSelection.rds")
+with(ms, c(sum(AICw[env1 == env1[1]]), sum(AICw[env2==env2[1] | env1==env2[1]])))
+head(ms,10)
+a = readRDS("~/Dropbox/work/projects/STModel-Two-State_git/species/28731-ACE-SAC/dat/28731-ACE-SAC_transitions.rds")
+nrow(a)
+head(a)
+length(unique(a$plot))
+b = readRDS("~/Dropbox/work/projects/STModel-Two-State_git/dat/plotLocations.rds")
+head(b)
+range(b$lat)
+range(b$lon)
+?png
+?par
+install.pacakges('DiagrammeR')
+install.packges('DiagrammeR')
+install.packages('DiagrammeR')
+library(DiagrammeR)#
+mermaid("#
+gantt#
+dateFormat  YYYY-MM-DD#
+title A Very Nice Gantt Diagram#
+#
+section Basic Tasks#
+This is completed             :done,          first_1,    2014-01-06, 2014-01-08#
+This is active                :active,        first_2,    2014-01-09, 3d#
+Do this later                 :               first_3,    after first_2, 5d#
+Do this after that            :               first_4,    after first_3, 5d#
+#
+section Important Things#
+Completed, critical task      :crit, done,    import_1,   2014-01-06,24h#
+Also done, also critical      :crit, done,    import_2,   after import_1, 2d#
+Doing this important task now :crit, active,  import_3,   after import_2, 3d#
+Next critical task            :crit,          import_4,   after import_3, 5d#
+#
+section The Extras#
+First extras                  :active,        extras_1,   after import_4,  3d#
+Second helping                :               extras_2,   after extras_1, 20h#
+More of the extras            :               extras_3,   after extras_1, 48h#
+")
+?mermaid
+? DiagrammeR
+install.packages('plotrix')
+library(plotrix)
+Ymd.format<-"%Y/%m/%d"#
+ gantt.info<-list(labels=#
+  c("First task","Second task","Third task","Fourth task","Fifth task"),#
+  starts=#
+  as.POSIXct(strptime(#
+  c("2004/01/01","2004/02/02","2004/03/03","2004/05/05","2004/09/09"),#
+  format=Ymd.format)),#
+  ends=#
+  as.POSIXct(strptime(#
+  c("2004/03/03","2004/05/05","2004/05/05","2004/08/08","2004/12/12"),#
+  format=Ymd.format)),#
+  priorities=c(1,2,3,4,5))#
+ vgridpos<-as.POSIXct(strptime(c("2004/01/01","2004/02/01","2004/03/01",#
+  "2004/04/01","2004/05/01","2004/06/01","2004/07/01","2004/08/01",#
+  "2004/09/01","2004/10/01","2004/11/01","2004/12/01"),format=Ymd.format))#
+ vgridlab<-#
+  c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")#
+ gantt.chart(gantt.info,main="Calendar date Gantt chart (2004)",#
+  priority.legend=TRUE,vgridpos=vgridpos,vgridlab=vgridlab,hgrid=TRUE)#
+ # if both vgidpos and vgridlab are specified,#
+ # starts and ends don't have to be dates#
+ info2<-list(labels=c("Jim","Joe","Jim","John","John","Jake","Joe","Jed","Jake"),#
+  starts=c(8.1,8.7,13.0,9.1,11.6,9.0,13.6,9.3,14.2),#
+  ends=c(12.5,12.7,16.5,10.3,15.6,11.7,18.1,18.2,19.0))#
+ gantt.chart(info2,vgridlab=8:19,vgridpos=8:19,#
+  main="All bars the same color",taskcolors="lightgray")#
+ gantt.chart(info2,vgridlab=8:19,vgridpos=8:19,#
+  main="A color for each label",taskcolors=c(2,3,7,4,8))#
+ gantt.chart(info2,vgridlab=8:19,vgridpos=8:19,#
+  main="A color for each interval - with borders",#
+  taskcolors=c(2,3,7,4,8,5,3,6,"purple"),border.col="black")
+install.packages('plan')
+sample(1:19, 2)
+sample(1:18, 1)
+sample(1:17)
+setwd("~/Dropbox/work/projects/Cross-Scale-Model-Integration-Examples_git/example_1")
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'layout(matrix(c(2,1), nrow=2), heights=c(.2,1))par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')plot(m1d[[1]], main="", sub="", xlab=expression(b_0), ylab="Relative Density", lwd=lwd, col=col.m1)## lines(m2d[[1]], lwd=lwd, col=col.m2)## lines(mmd[[1]], lwd=lwd, col=col.mm)## legend(0.82, 1, legend=c('Naive', 'Integrated'), col=c(col.n, col.i), lwd=lwd, bty='n')par(mar=c(0, 3, 0.5, 0.5))boxplot(cbind(m1p[,1], m2p[,1], mmp[,3]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'layout(matrix(c(2,1), nrow=2), heights=c(.2,1))par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')plot(m1d[[1]], main="", sub="", xlab=expression(b_0), ylab="Relative Density", lwd=lwd, col=col.m1)## lines(m2d[[1]], lwd=lwd, col=col.m2)## lines(mmd[[1]], lwd=lwd, col=col.mm)## legend(0.82, 1, legend=c('Naive', 'Integrated'), col=c(col.n, col.i), lwd=lwd, bty='n')par(mar=c(0, 3, 0.5, 0.5))## boxplot(cbind(m1p[,1], m2p[,1], mmp[,3]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'layout(matrix(c(2,1), nrow=2), heights=c(.2,1))par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')plot(m1d[[1]], main="", sub="", xlab=expression(b_0), ylab="Relative Density", lwd=lwd, col=col.m1)lines(m2d[[1]], lwd=lwd, col=col.m2)## lines(mmd[[1]], lwd=lwd, col=col.mm)## legend(0.82, 1, legend=c('Naive', 'Integrated'), col=c(col.n, col.i), lwd=lwd, bty='n')par(mar=c(0, 3, 0.5, 0.5))## boxplot(cbind(m1p[,1], m2p[,1], mmp[,3]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'layout(matrix(c(2,1), nrow=2), heights=c(.2,1))par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')plot(m1d[[1]], main="", sub="", xlab=expression(b_0), ylab="Relative Density", lwd=lwd, col=col.m1)lines(m2d[[1]], lwd=lwd, col=col.m2)lines(mmd[[1]], lwd=lwd, col=col.mm)## legend(0.82, 1, legend=c('Naive', 'Integrated'), col=c(col.n, col.i), lwd=lwd, bty='n')par(mar=c(0, 3, 0.5, 0.5))boxplot(cbind(m1p[,1], m2p[,1], mmp[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'layout(matrix(c(2,1), nrow=2), heights=c(.2,1))par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')plot(m1d[[1]], main="", sub="", xlab=expression(b[0]), ylab="Relative Density", lwd=lwd, col=col.m1)lines(m2d[[1]], lwd=lwd, col=col.m2)lines(mmd[[1]], lwd=lwd, col=col.mm)## legend(0.82, 1, legend=c('Naive', 'Integrated'), col=c(col.n, col.i), lwd=lwd, bty='n')par(mar=c(0, 3, 0.5, 0.5))boxplot(cbind(m1p[,1], m2p[,1], mmp[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)#
+## dev.off()
+ncol(m1p)
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'layout(matrix(c(2,4,6,1,3,5,8,10,7,9,11,11), nrow=4), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=expression(b[0]), ylab="Relative Density", lwd=lwd, col=col.m1)	lines(m2d[[i]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	boxplot(cbind(m1p[,i], m2p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model", col=c(col.m1, col.m2, col.mm), lwd=lwd), bty='n')#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'layout(matrix(c(2,4,6,1,3,5,8,10,7,9,11,11), nrow=4), heights=c(.2,1,.2,1), byrow=T)for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=expression(b[0]), ylab="Relative Density", lwd=lwd, col=col.m1)	lines(m2d[[i]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	boxplot(cbind(m1p[,i], m2p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model", col=c(col.m1, col.m2, col.mm), lwd=lwd), bty='n')#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'layout(matrix(c(2,4,6,1,3,5,8,10,7,9,11,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=expression(b[0]), ylab="Relative Density", lwd=lwd, col=col.m1)	lines(m2d[[i]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	boxplot(cbind(m1p[,i], m2p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model", col=c(col.m1, col.m2, col.mm), lwd=lwd), bty='n')#
+## dev.off()
+length(m2d)
+head(m2p)
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))layout(matrix(c(2,4,6,1,3,5,8,10,7,9,11,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% (1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% (1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model", col=c(col.m1, col.m2, col.mm), lwd=lwd), bty='n')#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))layout(matrix(c(2,4,6,1,3,5,8,10,7,9,11,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))
+layout(matrix(c(2,4,6,1,3,5,8,10,7,9,11,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))
+for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% (1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% (1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))
+lines(m2d[[j[i]]], lwd=lwd, col=col.m2)
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))layout(matrix(c(2,4,6,1,3,5,8,10,7,9,11,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model", col=c(col.m1, col.m2, col.mm), lwd=lwd), bty='n')#
+## dev.off()
+matrix(c(2,4,6,1,3,5,8,10,7,9,11,11), nrow=4, byrow=T)
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))layout(matrix(c(2,4,6,1,3,5,8,10,11,7,9,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model", col=c(col.m1, col.m2, col.mm), lwd=lwd), bty='n')#
+## dev.off()
+legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd), bty='n')
+legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd, bty='n')
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = 'red'col.m2 = 'blue'col.mm = 'cyan'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))layout(matrix(c(2,4,6,1,3,5,8,10,11,7,9,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd, bty='n')#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = '#66c2a5'col.m2 = '#fc8d62'col.mm = '#8da0cb'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))layout(matrix(c(2,4,6,1,3,5,8,10,11,7,9,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd, bty='n')#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+## paperwidth = 5.5## dpi = 600## hToWRatio = 0.85## width = as.integer(dpi*paperwidth)## height = as.integer(width * hToWRatio)## fontsize = 12## png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = '#1b9e77'col.m2 = '#d95f02'col.mm = '#7570b3'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))layout(matrix(c(2,4,6,1,3,5,8,10,11,7,9,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd, bty='n')#
+## dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = '#1b9e77'col.m2 = '#d95f02'col.mm = '#7570b3'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))paperwidth = 5.5dpi = 600hToWRatio = 0.65width = as.integer(dpi*paperwidth)height = as.integer(width * hToWRatio)fontsize = 12png(w=width, h=height, file="ex2_auc.png", pointsize=fontsize, res = dpi)layout(matrix(c(2,4,6,1,3,5,8,10,11,7,9,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd, bty='n')#
+dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = '#1b9e77'col.m2 = '#d95f02'col.mm = '#7570b3'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))paperwidth = 5.5dpi = 600hToWRatio = 0.65width = as.integer(dpi*paperwidth)height = as.integer(width * hToWRatio)fontsize = 12png(w=width, h=height, file="ex1_params.png", pointsize=fontsize, res = dpi)layout(matrix(c(2,4,6,1,3,5,8,10,11,7,9,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0.3, 0.5, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd, bty='n')#
+dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = '#1b9e77'col.m2 = '#d95f02'col.mm = '#7570b3'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))paperwidth = 5.5dpi = 600hToWRatio = 0.65width = as.integer(dpi*paperwidth)height = as.integer(width * hToWRatio)fontsize = 10png(w=width, h=height, file="ex1_params.png", pointsize=fontsize, res = dpi)layout(matrix(c(2,4,6,1,3,5,8,10,11,7,9,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0, 1, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd, bty='n', cex=0.8)#
+dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = '#1b9e77'col.m2 = '#d95f02'col.mm = '#7570b3'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))paperwidth = 5.5dpi = 600hToWRatio = 0.65width = as.integer(dpi*paperwidth)height = as.integer(width * hToWRatio)fontsize = 10png(w=width, h=height, file="ex1_params.png", pointsize=fontsize, res = dpi)layout(matrix(c(2,4,6,1,3,5,8,10,11,7,9,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1, range=0)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0, 1, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd, bty='n', cex=0.8)#
+dev.off()
+library(rjags)load("dat/ex1_m1.rdata")load("dat/ex1_m2.rdata")load("dat/ex1_mm.rdata")#
+adj=1.5m1p = do.call(rbind, m1Results)m1d = apply(m1p, 2, density, adjust=adj)m1d = lapply(m1d, function(x) {x$y = x$y / max(x$y); x})m2p = do.call(rbind, m2Results)m2d = apply(m2p, 2, density, adjust=adj)m2d = lapply(m2d, function(x) {x$y = x$y / max(x$y); x})mmp = do.call(rbind, mmResults)mmd = apply(mmp, 2, density, adjust=adj)mmd = lapply(mmd, function(x) {x$y = x$y / max(x$y); x})## m2d = density(auc[,2], adjust=adj)## mmd = density(auc[,2], adjust=adj)## m2d$y = m2d$y / max(m2d$y)## mmd$y = mmd$y / max(mmd$y)#
+lwd=1.5col.m1 = '#1b9e77'col.m2 = '#d95f02'col.mm = '#7570b3'j = c(1,0,0,2,3)labs = c(expression(b[0]), expression(b[1]), expression(b[2]), expression(b[3]), expression(b[4]), expression(b[5]))paperwidth = 5.5dpi = 600hToWRatio = 0.65width = as.integer(dpi*paperwidth)height = as.integer(width * hToWRatio)fontsize = 10png(w=width, h=height, file="ex1_params.png", pointsize=fontsize, res = dpi)layout(matrix(c(2,4,6,1,3,5,8,10,11,7,9,11), nrow=4, byrow=T), heights=c(.2,1,.2,1))for(i in 1:5){	par(tcl=-0.2, mgp=c(2,0.5,0), cex=0.8, mar=c(3, 3, 0, 0.5), bty='n')	plot(m1d[[i]], main="", sub="", xlab=labs[i], ylab="Relative Density", lwd=lwd, col=col.m1)	if(i %in% c(1,4,5))		lines(m2d[[j[i]]], lwd=lwd, col=col.m2)	lines(mmd[[i]], lwd=lwd, col=col.mm)	par(mar=c(0, 3, 0.5, 0.5))	if(i %in% c(1,4,5))	{		boxplot(cbind(m1p[,i], m2p[,j[i]], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2, col.mm), horizontal=T, lty=1, range=0)	} else 	{		boxplot(cbind(m1p[,i], mmp[,i]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.mm), horizontal=T, lty=1, range=0)	}	## boxplot(cbind(m1p[,1], m2p[,1]), pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1, col.m2), horizontal=T, lty=1)	## boxplot(m1p[,1], pch='|', cex=0.4, xaxt='n', yaxt='n', col=c(col.m1), horizontal=T, lty=1)}plot(0,0,xlab='', ylab='', type='n', xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1))legend(0, 1, legend=c("Naive Model", "Sub-model", "Integrated Model"), col=c(col.m1, col.m2, col.mm), lwd=lwd, bty='n', cex=0.8)#
+dev.off()
