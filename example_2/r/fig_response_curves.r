@@ -22,6 +22,16 @@ load("results/posteriors.rdata")
 scaling = readRDS("dat/parameterScaling.rds")
 rawDat = readRDS("dat/rawData.rds")
 
+argv = commandArgs(TRUE)
+filename <- "ex2_response.pdf"
+grayscale = FALSE
+if("--gray" %in% argv)
+{
+	grayscale = TRUE
+	filename = "ex2_response_gray.pdf"
+}
+
+
 # varnames = c('ddeg', 'an_prcp', 'pToPET')
 
 unscale = function(x, scale.fit)
@@ -37,13 +47,20 @@ predict.mcmc = function(b, newdat)
 			b[5]*an_prcp + b[6]*an_prcp^2 + b[7]*pToPET + b[8]*pToPET^2))
 }
 
-npPr = apply(naivePosterior, 1, predict.mcmc, newdat=newdat)
-
 response_curve = function(v, v.name, lims, calib.range, draw.legend=FALSE)
 {
-#	color = c('#a6cee3', '#1f78b4', '#b2df8a')
-	color = c('#66c2a5', '#fc8d62', '#8da0cb')
-	calCols = c('#aaaaaa44', "#444444")
+	if(grayscale)
+	{
+		color = c('#cccccc', '#969696', '#525252')
+		lcolor = c('black', 'black', 'black')
+		lty = c(1,2,3)
+		calCols = c('#f0f0f0', "#444444")	
+	} else {
+		color = c('#66c2a5', '#fc8d62', '#8da0cb')
+		lcolor = color
+		lty = c(1,1,1)
+		calCols = c('#aaaaaa44', "#444444")
+	}
 	bcol = paste(color, "88", sep="")
 	pcol = paste(color, "66", sep="")
 	v.unscaled = seq(lims[1], lims[2], length.out=lims[3])
@@ -64,9 +81,9 @@ response_curve = function(v, v.name, lims, calib.range, draw.legend=FALSE)
 	
 	plot(0,0, type='n', ylim=c(0,1), col=color[1], ylab = "Probability of presence", xlab=v.name, bty='n', xlim=range(v.unscaled))
 	polygon(c(calib.range.unscaled, rev(calib.range.unscaled)), c(0,0,1,1), col=calCols[1], border=calCols[2], lwd=0.5)
-	lines(v.unscaled, yy[[1]], col=color[1])
-	lines(v.unscaled, yy[[2]], col=color[2])
-	lines(v.unscaled, yy[[3]], col=color[3])
+	lines(v.unscaled, yy[[1]], col=lcolor[1], lty=lty[1])
+	lines(v.unscaled, yy[[2]], col=lcolor[2], lty=lty[2])
+	lines(v.unscaled, yy[[3]], col=lcolor[3], lty=lty[3])
 	polygon(c(v.unscaled, rev(v.unscaled)), c(quant[[1]][,1], rev(quant[[1]][,2])), col=pcol[1], border=bcol[1])
 	polygon(c(v.unscaled, rev(v.unscaled)), c(quant[[2]][,1], rev(quant[[2]][,2])), col=pcol[2], border=bcol[2])
 	polygon(c(v.unscaled, rev(v.unscaled)), c(quant[[3]][,1], rev(quant[[3]][,2])), col=pcol[3], border=bcol[3])
@@ -79,7 +96,7 @@ ddeg.calib = with(rawDat$calib[complete.cases(rawDat$calib),], range(ddeg))
 an_prcp.calib = with(rawDat$calib[complete.cases(rawDat$calib),], range(an_prcp))
 pToPET.calib = with(rawDat$calib[complete.cases(rawDat$calib),], range(pToPET))
 
-pdf(file="ex2_response.pdf", w=7, h=2.75)
+pdf(file=filename, w=7, h=2.75)
 par(mfrow=c(1,3), mar=c(4,4,0,0))
 sm = 100 # controls how smooth the curves are; higher is smoother but slower
 # note: 6000 covers sugar maple all right, but misses the south of NA for the pres and up to 35 degrees lat for the future

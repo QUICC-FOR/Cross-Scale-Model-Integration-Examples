@@ -1,5 +1,6 @@
 # figures can be easily generated on the client side and are not tracked
 *.pdf
+*.png
 
 # some latex crap
 *.aux

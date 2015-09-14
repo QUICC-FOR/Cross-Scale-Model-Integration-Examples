@@ -35,6 +35,18 @@ rawDat = readRDS("dat/rawData.rds")
 load("results/posteriors.rdata")
 useR = FALSE
 
+argv = commandArgs(TRUE)
+fname_pres = "ex2_pres_map.png"
+fname_fut = "ex2_fut_map.png"
+grayscale = FALSE
+if("--gray" %in% argv)
+{
+	grayscale = TRUE
+	fname_pres = "ex2_pres_map_gray.png"
+	fname_fut = "ex2_fut_map_gray.png"
+}
+
+
 ocean = readOGR(dsn="dat/figure/ne_50m_ocean", layer="ne_50m_ocean")
 lakes = readOGR(dsn="dat/figure/ne_50m_lakes", layer="ne_50m_lakes")
 mapleRange = readOGR(dsn="dat/figure/acersacr", layer="acersacr")
@@ -46,11 +58,18 @@ grLakes.albers = spTransform(grLakes, P4S.albers)
 proj4string(mapleRange) = P4S.latlon
 mapleRange.albers = spTransform(mapleRange, P4S.albers)
 
-meanColors = colorRampPalette(c("#ffffff", "#bdc9e1", "#045a8d", "#33338d", "#cc99ff"), interpolate='spline', bias=1, space="rgb")(200)
-errorColors = colorRampPalette(c("#ffffff", "#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"), interpolate='spline', space="rgb", bias=1.4)(200)
-errDiffCols = colorRampPalette(c("blue", "white", "orange"), interpolate='spline', space="rgb", bias=1)(200)
+if(grayscale)
+{
+	meanColors = colorRampPalette(c("#ffffff", "#000000"), interpolate='spline', bias=1, space="rgb")(200)
+	errDiffCols = colorRampPalette(c("#ffffff", "#000000"), interpolate='spline', bias=1, space="rgb")(200)
+	rangeBorder = '#000000'
+} else {
+	meanColors = colorRampPalette(c("#ffffff", "#bdc9e1", "#045a8d", "#33338d", "#cc99ff"), interpolate='spline', bias=1, space="rgb")(200)
+	errDiffCols = colorRampPalette(c("blue", "white", "orange"), interpolate='spline', space="rgb", bias=1)(200)
+	rangeBorder = '#FF3333bb'
+}
+
 meanZlims = c(0,1)
-rangeBorder = '#FF3333bb'
 rangeLwd = 1.2
 rangeCol = "#66666600"
 xlim=c(-5e5,3e6)
@@ -73,7 +92,7 @@ dpi = 600
 imgwidth = as.integer(dpi*pdfWidth)
 imgheight=as.integer(pdfHeight*dpi)
 fontsize = 12
-png(w=imgwidth, h=imgheight, file="ex2_pres_map.png", pointsize=fontsize, res = dpi)
+png(w=imgwidth, h=imgheight, file=fname_pres, pointsize=fontsize, res = dpi)
 
 plotLayout = matrix(c(
 	1,2,3,4,
@@ -132,7 +151,7 @@ axis(side=1, at=seq(-0.006,0.006,0.003))
 mtext(errScaleTitle, line=0.5, cex = titleCEX)
 dev.off()
 
-png(w=imgwidth, h=imgheight, file="ex2_fut_map.png", pointsize=fontsize, res = dpi)
+png(w=imgwidth, h=imgheight, file=fname_fut, pointsize=fontsize, res = dpi)
 layout(plotLayout, heights=layoutHeights)
 par(mar=mapMar)
 

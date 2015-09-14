@@ -30,14 +30,25 @@ height.map <- 6		# this plot gets a different height since it is 2x2
 xlab.line <- 2
 ylab.line <- 1
 
+
+argv = commandArgs(TRUE)
+filename <- argv[1]
+grayscale = FALSE
+if("--gray" %in% argv)
+	grayscale = TRUE
+source("ex1_globals.r")
+
 # define color palettes for the two types of image plots
-presence.palette=colorRampPalette(c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe", "#045a8d"),space="rgb")
-uncertainty.palette=colorRampPalette(c("#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"), space="rgb")
+if(grayscale)
+	{
+		presence.palette = uncertainty.palette = 
+			colorRampPalette(c("#222222", "#ffffff"), space='rgb')
+	} else {
+		presence.palette=colorRampPalette(c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe", "#045a8d"),space="rgb")
+		uncertainty.palette=colorRampPalette(c("#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"), space="rgb")
+	}
 
 main <- function() {
-
-	filename <- commandArgs(TRUE)[1]
-	source("ex1_globals.r")
 
 	dpi = 600
 	imgwidth = as.integer(dpi*width)
@@ -102,10 +113,17 @@ sdm_xaxis <- function(precip.range) {
 	fut.xloc <- precip.range$future[1] - (precip.range$current[2] - precip.range$current[1])/11 #11 is the number of cells in the raster
 	hist.pos <- 2
 	fut.pos <- 4
+	if(grayscale)
+	{
+		historic.col = 'black'
+	} else {
+		historic.col = 'blue'
+	}
+
 	lines(c(precip.range$current[1],precip.range$current[2]), rep(hist.line.yloc,2), lwd=2)
-	lines(c(precip.range$future[1], precip.range$future[2]), rep(fut.line.yloc,2), lwd=2, col='blue')
+	lines(c(precip.range$future[1], precip.range$future[2]), rep(fut.line.yloc,2), lwd=2, col=historic.col)
 	text(hist.xloc, hist.yloc, "Historical Range", pos=hist.pos, cex=0.8)
-	text(fut.xloc, fut.yloc, "Projected Range", pos=fut.pos, col='blue', cex=0.8)
+	text(fut.xloc, fut.yloc, "Projected Range", pos=fut.pos, col=historic.col, cex=0.8)
 	mtext("Precipitation", side=1, line=xlab.line, cex = cex.lab)
 }
 
